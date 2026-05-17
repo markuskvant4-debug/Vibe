@@ -118,6 +118,15 @@ const VibeApp = {
             });
         });
 
+        // Мобильная навигация по страницам
+        document.querySelectorAll('.mobile-nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.currentTarget.dataset.page;
+                this.showPage(page);
+            });
+        });
+
         // Форма профиля
         document.getElementById('profile-form').addEventListener('submit', (e) => this.handleProfileUpdate(e));
         // Форма настроек
@@ -375,9 +384,14 @@ const VibeApp = {
         document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
         // Убрать активный класс у всех пунктов меню
         document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        // Убрать активный класс у всех мобильных пунктов меню
+        document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
         // Активировать текущий пункт меню
         const activeNav = document.querySelector(`.nav-item[data-page="${page}"]`);
         if (activeNav) activeNav.classList.add('active');
+        // Активировать текущий пункт мобильного меню
+        const activeMobileNav = document.querySelector(`.mobile-nav-item[data-page="${page}"]`);
+        if (activeMobileNav) activeMobileNav.classList.add('active');
 
         // Сохраняем текущую страницу
         this.currentPage = page;
@@ -1199,7 +1213,7 @@ const VibeApp = {
                     console.log(pair[0] + ': ' + (pair[0].startsWith('file') ? '[File]' : pair[1]));
                 }
                 
-                fetch('http://localhost:5000/api/posts', {
+                fetch('/api/posts', {
                     method: 'POST',
                     body: formData
                 })
@@ -1496,7 +1510,7 @@ const VibeApp = {
         if (avatarFile) formData.append('avatar', avatarFile);
 
         // Специальный запрос для FormData (не JSON)
-        fetch('http://localhost:5000/api/profile/update', {
+        fetch('/api/profile/update', {
             method: 'POST',
             body: formData
         })
@@ -1544,7 +1558,7 @@ const VibeApp = {
 
     // Универсальный запрос к API
     apiRequest: async function(endpoint, method = 'GET', data = null) {
-        const url = endpoint.startsWith('http') ? endpoint : `http://localhost:5000${endpoint}`;
+        const url = endpoint.startsWith('http') ? endpoint : `${endpoint}`;
         
         const options = {
             method: method,

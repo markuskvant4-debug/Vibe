@@ -125,6 +125,11 @@ if not os.path.exists(CHAT_FILE):
 if not os.path.exists(LOGIN_ATTEMPTS_FILE):
     save_login_attempts({})
 
+@app.route('/api/health')
+def health_check():
+    """Проверка работоспособности API"""
+    return jsonify({'status': 'ok', 'service': 'Vibe API'})
+
 @app.route('/')
 def serve_index():
     """Отдаем главную страницу"""
@@ -1233,6 +1238,6 @@ def get_verification_status(user_id):
 
 if __name__ == '__main__':
     print("Запуск социальной сети Vibe с расширенными функциями...")
-    print("Откройте в браузере: http://localhost:5000")
+    print("Откройте в браузере: https://vibe-rit4.onrender.com")
     print("Папка для загрузок:", UPLOAD_FOLDER)
     app.run(debug=True, host='0.0.0.0', port=5000)

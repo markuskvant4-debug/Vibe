@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibe - Социальная сеть для видео и постов</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-play-circle"></i>
+                <h1>Vibe</h1>
+                <span class="tagline">Смотри, делись, вдохновляй</span>
+            </div>
+            <div class="user-controls">
+                <div id="auth-section">
+                    <button id="login-btn" class="btn btn-outline"><i class="fas fa-sign-in-alt"></i> Войти</button>
+                    <button id="register-btn" class="btn btn-primary"><i class="fas fa-user-plus"></i> Регистрация</button>
+                </div>
+                <div id="user-section" class="hidden">
+                    <button id="profile-btn" class="btn btn-outline"><i class="fas fa-user"></i> Профиль</button>
+                    <button id="logout-btn" class="btn btn-outline"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main-content">
+            <div class="sidebar">
+                <nav class="nav-menu">
+                    <a href="#" class="nav-item active" data-page="feed"><i class="fas fa-home"></i> Лента</a>
+                    <a href="#" class="nav-item" data-page="popular"><i class="fas fa-fire"></i> Популярное</a>
+                    <a href="#" class="nav-item" data-page="profile" id="profile-nav-btn"><i class="fas fa-user"></i> Мой профиль</a>
+                    <a href="#" class="nav-item" data-page="create-post" id="create-post-btn"><i class="fas fa-plus-circle"></i> Создать пост</a>
+                    <a href="#" class="nav-item" data-page="chat"><i class="fas fa-comments"></i> Чат</a>
+                    <a href="#" class="nav-item" data-page="settings"><i class="fas fa-cog"></i> Настройки</a>
+                </nav>
+                
+                <div class="stats hidden">
+                    <h3>Статистика Vibe</h3>
+                    <div class="stat-item">
+                        <span class="stat-label">Постов сегодня:</span>
+                        <span class="stat-value" id="posts-today">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Пользователей:</span>
+                        <span class="stat-value" id="total-users">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Всего лайков:</span>
+                        <span class="stat-value" id="total-likes">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- Страница ленты постов (по умолчанию) -->
+                <div class="page" id="page-feed">
+                    <!-- Форма создания поста -->
+                    <div class="create-post-card card hidden" id="create-post-form">
+                        <h2><i class="fas fa-edit"></i> Создать новый пост</h2>
+                        <form id="post-form" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="post-title">Заголовок</label>
+                                <input type="text" id="post-title" placeholder="Введите заголовок поста" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="post-content">Содержание</label>
+                                <textarea id="post-content" rows="4" placeholder="О чем вы хотите рассказать?" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="post-files">Загрузить файлы (изображения, видео, аудио, документы)</label>
+                                <input type="file" id="post-files" multiple accept="image/*,video/*,audio/*,.pdf,.txt">
+                                <div class="file-hint">Можно выбрать несколько файлов. Максимальный размер: 50MB</div>
+                                <div id="file-preview" class="file-preview"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="post-video">Или ссылка на видео (YouTube, Vimeo и т.д.)</label>
+                                <input type="url" id="post-video" placeholder="https://www.youtube.com/watch?v=...">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-post" class="btn btn-outline">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Опубликовать</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Лента постов -->
+                    <div class="posts-feed">
+                        <h2><i class="fas fa-newspaper"></i> Лента постов</h2>
+                        <div class="feed-controls">
+                            <button id="refresh-feed" class="btn btn-outline"><i class="fas fa-sync-alt"></i> Обновить ленту</button>
+                            <div class="sort-controls">
+                                <span>Сортировка:</span>
+                                <select id="sort-posts">
+                                    <option value="newest">Сначала новые</option>
+                                    <option value="popular">По популярности</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="posts-container" id="posts-container">
+                            <!-- Посты будут загружаться здесь -->
+                            <div class="loading-posts">
+                                <i class="fas fa-spinner fa-spin"></i> Загрузка постов...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Страница профиля -->
+                <div class="page hidden" id="page-profile">
+                    <div class="profile-header card">
+                        <div class="profile-avatar-section">
+                            <div class="avatar-container">
+                                <img id="profile-avatar" src="" alt="Аватар" class="avatar-large">
+                            </div>
+                            <div class="profile-info">
+                                <h2 id="profile-username"></h2>
+                                <p id="profile-bio" class="profile-bio"></p>
+                                <div class="profile-stats">
+                                    <div class="profile-stat">
+                                        <span class="stat-number" id="profile-posts-count">0</span>
+                                        <span class="stat-label">постов</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-number" id="profile-likes-count">0</span>
+                                        <span class="stat-label">лайков</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-number" id="profile-followers-count">0</span>
+                                        <span class="stat-label">подписчиков</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-number" id="profile-following-count">0</span>
+                                        <span class="stat-label">подписок</span>
+                                    </div>
+                                    <div class="profile-stat">
+                                        <span class="stat-number" id="profile-reposts-count">0</span>
+                                        <span class="stat-label">репостов</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-content">
+                        <div class="card">
+                            <h3><i class="fas fa-edit"></i> Редактировать профиль</h3>
+                            <form id="profile-form">
+                                <div class="form-group">
+                                    <label for="profile-username-input">Имя пользователя</label>
+                                    <input type="text" id="profile-username-input" placeholder="Введите новое имя пользователя">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-bio-input">О себе</label>
+                                    <textarea id="profile-bio-input" rows="3" placeholder="Расскажите о себе"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-password">Новый пароль</label>
+                                    <input type="password" id="profile-password" placeholder="Оставьте пустым, если не хотите менять">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-password-confirm">Подтверждение пароля</label>
+                                    <input type="password" id="profile-password-confirm" placeholder="Повторите новый пароль">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-avatar-input">Сменить аватар</label>
+                                    <input type="file" id="profile-avatar-input" accept="image/*" class="form-control">
+                                    <small class="form-text">Выберите изображение (JPG, PNG, GIF)</small>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="card">
+                            <h3><i class="fas fa-history"></i> Мои посты</h3>
+                            <div id="user-posts-container">
+                                <!-- Посты пользователя будут загружены здесь -->
+                                <div class="loading-posts">
+                                    <i class="fas fa-spinner fa-spin"></i> Загрузка ваших постов...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Страница настроек -->
+                <div class="page hidden" id="page-settings">
+                    <div class="card">
+                        <h2><i class="fas fa-cog"></i> Настройки аккаунта</h2>
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label for="settings-theme">Тема интерфейса</label>
+                                <select id="settings-theme">
+                                    <option value="dark">Темная</option>
+                                    <option value="light">Светлая</option>
+                                    <option value="auto">Авто</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-notifications">
+                                    <input type="checkbox" id="settings-notifications" checked>
+                                    Уведомления о новых комментариях и лайках
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="settings-privacy">Приватность профиля</label>
+                                <select id="settings-privacy">
+                                    <option value="public">Публичный (все видят)</option>
+                                    <option value="private">Приватный (только друзья)</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Сохранить настройки</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Страница чата -->
+                <div class="page hidden" id="page-chat">
+                    <div class="card">
+                        <h2><i class="fas fa-comments"></i> Чат</h2>
+                        <div class="chat-container">
+                            <div class="chat-sidebar">
+                                <div class="chat-search">
+                                    <input type="text" id="chat-search-input" placeholder="Поиск пользователей...">
+                                    <button id="chat-search-btn"><i class="fas fa-search"></i></button>
+                                </div>
+                                <div class="chat-users" id="chat-users-list">
+                                    <!-- Динамически загружаемые пользователи -->
+                                </div>
+                            </div>
+                            <div class="chat-main">
+                                <div class="chat-header">
+                                    <div class="chat-header-info">
+                                        <div class="chat-header-avatar">A</div>
+                                        <div>
+                                            <div class="chat-header-name">Alex</div>
+                                            <div class="chat-header-status">был(а) в сети 5 минут назад</div>
+                                        </div>
+                                    </div>
+                                    <div class="chat-header-actions">
+                                        <button class="btn btn-outline btn-small"><i class="fas fa-phone"></i></button>
+                                        <button class="btn btn-outline btn-small"><i class="fas fa-video"></i></button>
+                                        <button class="btn btn-outline btn-small"><i class="fas fa-ellipsis-v"></i></button>
+                                    </div>
+                                </div>
+                                <div class="chat-messages" id="chat-messages">
+                                    <!-- Сообщения будут загружаться динамически -->
+                                </div>
+                                <div class="chat-input">
+                                    <div class="chat-input-actions">
+                                        <button class="btn btn-icon" id="chat-attach-btn" title="Прикрепить файл"><i class="fas fa-paperclip"></i></button>
+                                        <button class="btn btn-icon" id="chat-image-btn" title="Отправить изображение"><i class="fas fa-image"></i></button>
+                                        <button class="btn btn-icon" id="chat-emoji-btn" title="Добавить смайлик"><i class="fas fa-smile"></i></button>
+                                        <input type="file" id="chat-file-input" accept="image/*,video/*,audio/*,.pdf,.txt" class="hidden" multiple>
+                                    </div>
+                                    <input type="text" id="chat-message-input" placeholder="Введите сообщение...">
+                                    <button id="chat-send-btn" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+                                    <div class="emoji-picker hidden" id="emoji-picker">
+                                        <div class="emoji-grid">
+                                            <span class="emoji">😀</span>
+                                            <span class="emoji">😃</span>
+                                            <span class="emoji">😄</span>
+                                            <span class="emoji">😁</span>
+                                            <span class="emoji">😆</span>
+                                            <span class="emoji">😅</span>
+                                            <span class="emoji">😂</span>
+                                            <span class="emoji">🤣</span>
+                                            <span class="emoji">😊</span>
+                                            <span class="emoji">😇</span>
+                                            <span class="emoji">🙂</span>
+                                            <span class="emoji">🙃</span>
+                                            <span class="emoji">😉</span>
+                                            <span class="emoji">😌</span>
+                                            <span class="emoji">😍</span>
+                                            <span class="emoji">🥰</span>
+                                            <span class="emoji">😘</span>
+                                            <span class="emoji">😗</span>
+                                            <span class="emoji">😙</span>
+                                            <span class="emoji">😚</span>
+                                            <span class="emoji">😋</span>
+                                            <span class="emoji">😛</span>
+                                            <span class="emoji">😜</span>
+                                            <span class="emoji">🤪</span>
+                                            <span class="emoji">😝</span>
+                                            <span class="emoji">🤑</span>
+                                            <span class="emoji">🤗</span>
+                                            <span class="emoji">🤭</span>
+                                            <span class="emoji">🤫</span>
+                                            <span class="emoji">🤔</span>
+                                            <span class="emoji">🤐</span>
+                                            <span class="emoji">🤨</span>
+                                            <span class="emoji">😐</span>
+                                            <span class="emoji">😑</span>
+                                            <span class="emoji">😶</span>
+                                            <span class="emoji">😏</span>
+                                            <span class="emoji">😒</span>
+                                            <span class="emoji">🙄</span>
+                                            <span class="emoji">😬</span>
+                                            <span class="emoji">🤥</span>
+                                            <span class="emoji">😌</span>
+                                            <span class="emoji">😔</span>
+                                            <span class="emoji">😪</span>
+                                            <span class="emoji">🤤</span>
+                                            <span class="emoji">😴</span>
+                                            <span class="emoji">😷</span>
+                                            <span class="emoji">🤒</span>
+                                            <span class="emoji">🤕</span>
+                                            <span class="emoji">🤢</span>
+                                            <span class="emoji">🤮</span>
+                                            <span class="emoji">🤧</span>
+                                            <span class="emoji">🥵</span>
+                                            <span class="emoji">🥶</span>
+                                            <span class="emoji">🥴</span>
+                                            <span class="emoji">😵</span>
+                                            <span class="emoji">🤯</span>
+                                            <span class="emoji">🤠</span>
+                                            <span class="emoji">🥳</span>
+                                            <span class="emoji">😎</span>
+                                            <span class="emoji">🤓</span>
+                                            <span class="emoji">🧐</span>
+                                            <span class="emoji">😕</span>
+                                            <span class="emoji">😟</span>
+                                            <span class="emoji">🙁</span>
+                                            <span class="emoji">😮</span>
+                                            <span class="emoji">😯</span>
+                                            <span class="emoji">😲</span>
+                                            <span class="emoji">😳</span>
+                                            <span class="emoji">🥺</span>
+                                            <span class="emoji">😦</span>
+                                            <span class="emoji">😧</span>
+                                            <span class="emoji">😨</span>
+                                            <span class="emoji">😰</span>
+                                            <span class="emoji">😥</span>
+                                            <span class="emoji">😢</span>
+                                            <span class="emoji">😭</span>
+                                            <span class="emoji">😱</span>
+                                            <span class="emoji">😖</span>
+                                            <span class="emoji">😣</span>
+                                            <span class="emoji">😞</span>
+                                            <span class="emoji">😓</span>
+                                            <span class="emoji">😩</span>
+                                            <span class="emoji">😫</span>
+                                            <span class="emoji">🥱</span>
+                                            <span class="emoji">😤</span>
+                                            <span class="emoji">😡</span>
+                                            <span class="emoji">😠</span>
+                                            <span class="emoji">🤬</span>
+                                            <span class="emoji">😈</span>
+                                            <span class="emoji">👿</span>
+                                            <span class="emoji">💀</span>
+                                            <span class="emoji">☠️</span>
+                                            <span class="emoji">💩</span>
+                                            <span class="emoji">🤡</span>
+                                            <span class="emoji">👹</span>
+                                            <span class="emoji">👺</span>
+                                            <span class="emoji">👻</span>
+                                            <span class="emoji">👽</span>
+                                            <span class="emoji">👾</span>
+                                            <span class="emoji">🤖</span>
+                                            <span class="emoji">😺</span>
+                                            <span class="emoji">😸</span>
+                                            <span class="emoji">😹</span>
+                                            <span class="emoji">😻</span>
+                                            <span class="emoji">😼</span>
+                                            <span class="emoji">😽</span>
+                                            <span class="emoji">🙀</span>
+                                            <span class="emoji">😿</span>
+                                            <span class="emoji">😾</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Формы авторизации -->
+                <div class="auth-forms">
+                    <div class="card login-form hidden" id="login-form">
+                        <h2><i class="fas fa-sign-in-alt"></i> Вход в Vibe</h2>
+                        <form id="login-form-element">
+                            <div class="form-group">
+                                <label for="login-username">Имя пользователя</label>
+                                <input type="text" id="login-username" placeholder="Введите ваш никнейм" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="login-password">Пароль</label>
+                                <input type="password" id="login-password" placeholder="Введите пароль" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-login" class="btn btn-outline">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Войти</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card register-form hidden" id="register-form">
+                        <h2><i class="fas fa-user-plus"></i> Регистрация в Vibe</h2>
+                        <form id="register-form-element">
+                            <div class="form-group">
+                                <label for="register-username">Имя пользователя</label>
+                                <input type="text" id="register-username" placeholder="Придумайте уникальный никнейм" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-password">Пароль</label>
+                                <input type="password" id="register-password" placeholder="Придумайте надежный пароль" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="register-confirm">Подтверждение пароля</label>
+                                <input type="password" id="register-confirm" placeholder="Повторите пароль" required>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-register" class="btn btn-outline">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Футер -->
+        <footer class="footer">
+            <p>© 2023 Vibe - Социальная сеть для видео и постов. Все права защищены.</p>
+            <div class="footer-links">
+                <a href="#">О нас</a>
+                <a href="#">Правила</a>
+                <a href="#">Конфиденциальность</a>
+                <a href="#">Поддержка</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Модальное окно для медиа -->
+    <div class="modal hidden" id="media-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="media-modal-title"></h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="media-player">
+                    <!-- Здесь будет отображаться изображение, видео или аудио -->
+                </div>
+                <p id="media-description"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Аудиоплеер для глобального воспроизведения -->
+    <div class="audio-player hidden" id="global-audio-player">
+        <div class="audio-info">
+            <span id="audio-title">Воспроизведение аудио</span>
+        </div>
+        <div class="audio-controls">
+            <button id="audio-play-pause"><i class="fas fa-play"></i></button>
+            <input type="range" id="audio-progress" min="0" max="100" value="0">
+            <span id="audio-time">0:00 / 0:00</span>
+            <button id="audio-close"><i class="fas fa-times"></i></button>
+        </div>
+        <audio id="global-audio-element" preload="metadata"></audio>
+    </div>
+
+    <!-- Модальное окно звонка -->
+    <div class="modal hidden" id="call-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="call-title">Звонок</h3>
+                <button class="close-modal" id="close-call">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="call-container">
+                    <div class="call-avatar">
+                        <div id="call-avatar-letter" class="call-avatar-letter">U</div>
+                        <div id="call-avatar-image" class="call-avatar-image hidden"></div>
+                    </div>
+                    <div class="call-info">
+                        <h4 id="call-username">Пользователь</h4>
+                        <p id="call-status">Соединение...</p>
+                    </div>
+                    <div class="call-controls">
+                        <button id="call-mute" class="btn btn-outline"><i class="fas fa-microphone"></i> Выкл. звук</button>
+                        <button id="call-video-toggle" class="btn btn-outline"><i class="fas fa-video"></i> Выкл. видео</button>
+                        <button id="call-end" class="btn btn-danger"><i class="fas fa-phone-slash"></i> Завершить</button>
+                    </div>
+                    <div class="call-timer" id="call-timer">00:00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

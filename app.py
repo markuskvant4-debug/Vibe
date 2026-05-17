@@ -1233,6 +1233,6 @@ def get_verification_status(user_id):
 
 if __name__ == '__main__':
     print("Запуск социальной сети Vibe с расширенными функциями...")
-    print("Откройте в браузере: http://localhost:5000")
+    print("Откройте в браузере: https://vibe-rit4.onrender.com")
     print("Папка для загрузок:", UPLOAD_FOLDER)
     app.run(debug=True, host='0.0.0.0', port=5000)

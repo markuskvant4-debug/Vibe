@@ -1199,7 +1199,7 @@ const VibeApp = {
                     console.log(pair[0] + ': ' + (pair[0].startsWith('file') ? '[File]' : pair[1]));
                 }
                 
-                fetch('http://localhost:5000/api/posts', {
+                fetch('https://vibe-rit4.onrender.com/api/posts', {
                     method: 'POST',
                     body: formData
                 })
@@ -1496,7 +1496,7 @@ const VibeApp = {
         if (avatarFile) formData.append('avatar', avatarFile);
 
         // Специальный запрос для FormData (не JSON)
-        fetch('http://localhost:5000/api/profile/update', {
+        fetch('https://vibe-rit4.onrender.com/api/profile/update', {
             method: 'POST',
             body: formData
         })
@@ -1544,7 +1544,7 @@ const VibeApp = {
 
     // Универсальный запрос к API
     apiRequest: async function(endpoint, method = 'GET', data = null) {
-        const url = endpoint.startsWith('http') ? endpoint : `http://localhost:5000${endpoint}`;
+        const url = endpoint.startsWith('http') ? endpoint : `https://vibe-rit4.onrender.com${endpoint}`;
         
         const options = {
             method: method,

@@ -28,6 +28,14 @@ const VibeApp = {
     // Видимость эмодзи-пикера
     emojiPickerVisible: false,
     
+    // Верификация email
+    pendingEmail: null,
+    pendingPassword: null,
+    verificationTimer: null,
+    resendTimer: null,
+    resendCooldown: 7 * 60, // 7 минут в секундах
+    attemptsLeft: 3,
+    
     // Инициализация приложения
     init: function() {
         console.log('Инициализация социальной сети Vibe...');
@@ -85,10 +93,13 @@ const VibeApp = {
         document.getElementById('cancel-login').addEventListener('click', () => this.hideAuthForms());
         document.getElementById('cancel-register').addEventListener('click', () => this.hideAuthForms());
         document.getElementById('cancel-post').addEventListener('click', () => this.hideCreatePostForm());
+        document.getElementById('cancel-verification').addEventListener('click', () => this.hideVerificationForm());
+        document.getElementById('resend-code').addEventListener('click', () => this.resendVerificationCode());
         
         // Формы
         document.getElementById('login-form-element').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form-element').addEventListener('submit', (e) => this.handleRegister(e));
+        document.getElementById('verification-form-element').addEventListener('submit', (e) => this.handleVerification(e));
         document.getElementById('post-form').addEventListener('submit', (e) => this.handleCreatePost(e));
         
         // Обработка выбора файлов для поста
@@ -228,6 +239,7 @@ const VibeApp = {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
         document.getElementById('create-post-form').classList.add('hidden');
+        document.getElementById('verification-form').classList.add('hidden');
     },
     
     // Скрыть формы авторизации
@@ -290,15 +302,15 @@ const VibeApp = {
             });
     },
     
-    // Обработка регистрации
+    // Обработка регистрации (отправка кода на email)
     handleRegister: function(e) {
         e.preventDefault();
         
-        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
         const password = document.getElementById('register-password').value.trim();
         const confirmPassword = document.getElementById('register-confirm').value.trim();
         
-        if (!username || !password || !confirmPassword) {
+        if (!email || !password || !confirmPassword) {
             alert('Заполните все поля');
             return;
         }
@@ -313,22 +325,166 @@ const VibeApp = {
             return;
         }
         
-        this.apiRequest('/api/register', 'POST', { username, password })
+        // Простая валидация email
+        if (!email.includes('@') || !email.includes('.')) {
+            alert('Введите корректный email');
+            return;
+        }
+        
+        // Сохраняем email и пароль для последующего использования
+        this.pendingEmail = email;
+        this.pendingPassword = password;
+        
+        // Отправляем запрос на отправку кода подтверждения
+        this.apiRequest('/api/send-verification-code', 'POST', { email, password })
             .then(data => {
                 if (data.success) {
-                    alert('Регистрация успешна! Теперь вы можете войти.');
-                    this.showLoginForm();
-                    // Автоматически заполняем форму входа
-                    document.getElementById('login-username').value = username;
-                    document.getElementById('login-password').value = password;
+                    // Показываем форму верификации
+                    this.showVerificationForm(email);
+                    alert('Код подтверждения отправлен на вашу почту. Проверьте письмо.');
                 } else {
                     alert('Ошибка: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Ошибка регистрации:', error);
+                console.error('Ошибка отправки кода:', error);
                 alert('Ошибка соединения с сервером');
             });
+    },
+    
+    // Показать форму верификации
+    showVerificationForm: function(email) {
+        this.hideAllForms();
+        document.getElementById('verification-form').classList.remove('hidden');
+        document.getElementById('verification-email').textContent = email;
+        // Сброс счётчика попыток
+        this.attemptsLeft = 3;
+        document.getElementById('attempts-left').textContent = this.attemptsLeft;
+        // Запуск таймера для кнопки повторной отправки
+        this.startResendTimer();
+    },
+    
+    // Скрыть форму верификации
+    hideVerificationForm: function() {
+        document.getElementById('verification-form').classList.add('hidden');
+        this.pendingEmail = null;
+        this.pendingPassword = null;
+        if (this.resendTimer) {
+            clearInterval(this.resendTimer);
+            this.resendTimer = null;
+        }
+    },
+    
+    // Обработка подтверждения кода
+    handleVerification: function(e) {
+        e.preventDefault();
+        
+        const code = document.getElementById('verification-code').value.trim();
+        const username = document.getElementById('register-username-final').value.trim() || this.pendingEmail;
+        
+        if (!code || code.length !== 6 || !/^\d+$/.test(code)) {
+            alert('Введите корректный 6-значный код');
+            return;
+        }
+        
+        // Отправляем код на проверку
+        this.apiRequest('/api/verify-code', 'POST', { email: this.pendingEmail, code })
+            .then(data => {
+                if (data.success) {
+                    // Код верный, завершаем регистрацию
+                    this.finishRegistration(username);
+                } else {
+                    // Уменьшаем количество попыток
+                    this.attemptsLeft--;
+                    document.getElementById('attempts-left').textContent = this.attemptsLeft;
+                    if (this.attemptsLeft <= 0) {
+                        alert('Превышено количество попыток. Регистрация отменена.');
+                        this.hideVerificationForm();
+                        this.showRegisterForm();
+                    } else {
+                        alert(data.message || 'Неверный код');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка проверки кода:', error);
+                alert('Ошибка соединения с сервером');
+            });
+    },
+    
+    // Завершение регистрации после подтверждения кода
+    finishRegistration: function(username) {
+        this.apiRequest('/api/register-final', 'POST', {
+            email: this.pendingEmail,
+            username: username
+        })
+            .then(data => {
+                if (data.success) {
+                    alert('Регистрация завершена! Теперь вы можете войти.');
+                    // Автоматически заполняем форму входа
+                    document.getElementById('login-username').value = username;
+                    document.getElementById('login-password').value = this.pendingPassword;
+                    this.hideVerificationForm();
+                    this.showLoginForm();
+                } else {
+                    alert('Ошибка завершения регистрации: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка завершения регистрации:', error);
+                alert('Ошибка соединения с сервером');
+            });
+    },
+    
+    // Повторная отправка кода
+    resendVerificationCode: function() {
+        if (!this.pendingEmail || !this.pendingPassword) {
+            alert('Ошибка: данные email не найдены');
+            return;
+        }
+        
+        this.apiRequest('/api/send-verification-code', 'POST', {
+            email: this.pendingEmail,
+            password: this.pendingPassword
+        })
+            .then(data => {
+                if (data.success) {
+                    alert('Новый код отправлен на вашу почту.');
+                    this.startResendTimer();
+                } else {
+                    alert('Ошибка: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка повторной отправки:', error);
+                alert('Ошибка соединения с сервером');
+            });
+    },
+    
+    // Запуск таймера для кнопки повторной отправки
+    startResendTimer: function() {
+        const resendBtn = document.getElementById('resend-code');
+        let secondsLeft = this.resendCooldown;
+        
+        const updateButton = () => {
+            if (secondsLeft > 0) {
+                resendBtn.disabled = true;
+                resendBtn.textContent = `Отправить повторно (${Math.floor(secondsLeft / 60)}:${(secondsLeft % 60).toString().padStart(2, '0')})`;
+                secondsLeft--;
+            } else {
+                resendBtn.disabled = false;
+                resendBtn.textContent = 'Отправить повторно';
+                clearInterval(this.resendTimer);
+                this.resendTimer = null;
+            }
+        };
+        
+        if (this.resendTimer) {
+            clearInterval(this.resendTimer);
+        }
+        
+        updateButton();
+        this.resendTimer = setInterval(updateButton, 1000);
     },
     
     // Выход из системы

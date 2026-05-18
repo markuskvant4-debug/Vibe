@@ -3,6 +3,9 @@ from flask_cors import CORS
 import json
 import os
 import uuid
+import random
+import smtplib
+from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -115,6 +118,58 @@ def reset_login_attempts(ip_address):
         del attempts[ip_address]
         save_login_attempts(attempts)
 
+# Конфигурация email
+SMTP_SERVER = 'smtp.gmail.com'
+SMTP_PORT = 465
+EMAIL_SENDER = 'markuskvant4@gmail.com'
+EMAIL_PASSWORD = 'vzswfcdmnfqqrosh'
+
+def send_verification_email(to_email, code):
+    """Отправляет email с кодом подтверждения"""
+    subject = 'Код подтверждения для Vibe'
+    body = f'Ваш код подтверждения: {code}\n\nКод действителен в течении 15 минут.\n\nЕсли вы не запрашивали код, просто проигнорируйте это письмо.'
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = EMAIL_SENDER
+    msg['To'] = to_email
+    
+    try:
+        with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f'Ошибка отправки email: {e}')
+        return False
+
+def generate_verification_code():
+    """Генерирует 6-значный цифровой код"""
+    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+def find_verification_request(email, ip_address=None):
+    """Находит активную заявку верификации по email или IP"""
+    requests = load_data(VERIFICATION_FILE)
+    now = datetime.now()
+    for req in requests:
+        # Проверяем, не истек ли код
+        expires_at = datetime.fromisoformat(req['expires_at'])
+        if expires_at < now:
+            continue
+        if req['email'] == email:
+            return req
+        if ip_address and req.get('ip') == ip_address:
+            return req
+    return None
+
+def cleanup_expired_requests():
+    """Удаляет истёкшие заявки верификации"""
+    requests = load_data(VERIFICATION_FILE)
+    now = datetime.now()
+    valid = [req for req in requests if datetime.fromisoformat(req['expires_at']) >= now]
+    if len(valid) != len(requests):
+        save_data(VERIFICATION_FILE, valid)
+    return len(requests) - len(valid)
+
 # Инициализация файлов если их нет
 if not os.path.exists(USERS_FILE):
     save_data(USERS_FILE, [])
@@ -124,6 +179,8 @@ if not os.path.exists(CHAT_FILE):
     save_data(CHAT_FILE, [])
 if not os.path.exists(LOGIN_ATTEMPTS_FILE):
     save_login_attempts({})
+if not os.path.exists(VERIFICATION_FILE):
+    save_data(VERIFICATION_FILE, [])
 
 @app.route('/api/health')
 def health_check():
@@ -193,8 +250,197 @@ def register():
     save_data(USERS_FILE, users)
     
     return jsonify({
-        'success': True, 
+        'success': True,
         'message': 'Регистрация успешна',
+        'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
+    })
+
+@app.route('/api/send-verification-code', methods=['POST'])
+def send_verification_code():
+    """Отправка кода подтверждения на email"""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'success': False, 'message': 'Email и пароль обязательны'}), 400
+    
+    # Валидация email
+    import re
+    email_regex = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_regex, email):
+        return jsonify({'success': False, 'message': 'Неверный формат email'}), 400
+    
+    # Проверка длины пароля
+    if len(password) < 4:
+        return jsonify({'success': False, 'message': 'Пароль должен содержать минимум 4 символа'}), 400
+    
+    # Проверяем, не зарегистрирован ли уже email как username (у нас username уникален)
+    users = load_data(USERS_FILE)
+    for user in users:
+        if user['username'] == email:
+            return jsonify({'success': False, 'message': 'Пользователь с таким email уже зарегистрирован'}), 400
+    
+    # Очистка истёкших запросов
+    cleanup_expired_requests()
+    
+    # Проверяем, есть ли активная заявка для этого email или IP
+    ip_address = request.remote_addr
+    existing = find_verification_request(email, ip_address)
+    if existing:
+        # Если есть активная заявка, проверяем время повторной отправки (7 минут)
+        created_at = datetime.fromisoformat(existing['created_at'])
+        if datetime.now() < created_at + timedelta(minutes=7):
+            remaining = (created_at + timedelta(minutes=7) - datetime.now()).seconds // 60
+            return jsonify({
+                'success': False,
+                'message': f'Повторная отправка кода возможна через {remaining} минут'
+            }), 429
+        else:
+            # Удаляем старую заявку, чтобы создать новую
+            requests = load_data(VERIFICATION_FILE)
+            requests = [r for r in requests if r['email'] != email]
+            save_data(VERIFICATION_FILE, requests)
+    
+    # Генерируем код
+    code = generate_verification_code()
+    
+    # Отправляем email
+    if not send_verification_email(email, code):
+        return jsonify({'success': False, 'message': 'Ошибка отправки email'}), 500
+    
+    # Сохраняем заявку верификации
+    requests = load_data(VERIFICATION_FILE)
+    new_request = {
+        'id': len(requests) + 1,
+        'email': email,
+        'password': password,  # храним пароль временно (plain-text)
+        'code': code,
+        'attempts': 0,
+        'max_attempts': 3,
+        'created_at': datetime.now().isoformat(),
+        'expires_at': (datetime.now() + timedelta(minutes=15)).isoformat(),
+        'ip': ip_address,
+        'verified': False
+    }
+    requests.append(new_request)
+    save_data(VERIFICATION_FILE, requests)
+    
+    return jsonify({
+        'success': True,
+        'message': 'Код подтверждения отправлен на email',
+        'expires_in': 15  # минут
+    })
+
+@app.route('/api/verify-code', methods=['POST'])
+def verify_code():
+    """Проверка введённого кода подтверждения"""
+    data = request.json
+    email = data.get('email')
+    code = data.get('code')
+    
+    if not email or not code:
+        return jsonify({'success': False, 'message': 'Email и код обязательны'}), 400
+    
+    # Находим активную заявку
+    request_data = find_verification_request(email)
+    if not request_data:
+        return jsonify({'success': False, 'message': 'Код не найден или истёк'}), 404
+    
+    # Проверяем, не превышено ли количество попыток
+    if request_data['attempts'] >= request_data['max_attempts']:
+        return jsonify({'success': False, 'message': 'Превышено количество попыток'}), 403
+    
+    # Проверяем код
+    if request_data['code'] != code:
+        # Увеличиваем счётчик попыток
+        requests = load_data(VERIFICATION_FILE)
+        for i, req in enumerate(requests):
+            if req['email'] == email:
+                requests[i]['attempts'] += 1
+                save_data(VERIFICATION_FILE, requests)
+                remaining = req['max_attempts'] - requests[i]['attempts']
+                return jsonify({
+                    'success': False,
+                    'message': f'Неверный код. Осталось попыток: {remaining}'
+                }), 400
+        return jsonify({'success': False, 'message': 'Неверный код'}), 400
+    
+    # Код верный, помечаем как подтверждённый
+    requests = load_data(VERIFICATION_FILE)
+    for i, req in enumerate(requests):
+        if req['email'] == email:
+            requests[i]['verified'] = True
+            save_data(VERIFICATION_FILE, requests)
+            break
+    
+    return jsonify({
+        'success': True,
+        'message': 'Код подтверждён',
+        'email': email
+    })
+
+@app.route('/api/register-final', methods=['POST'])
+def register_final():
+    """Финальная регистрация после подтверждения кода"""
+    data = request.json
+    email = data.get('email')
+    username = data.get('username', email)  # если имя не указано, используем email
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'Email обязателен'}), 400
+    
+    # Находим подтверждённую заявку
+    request_data = find_verification_request(email)
+    if not request_data or not request_data.get('verified'):
+        return jsonify({'success': False, 'message': 'Требуется подтверждение email'}), 403
+    
+    # Проверяем, не истёк ли код
+    expires_at = datetime.fromisoformat(request_data['expires_at'])
+    if datetime.now() > expires_at:
+        return jsonify({'success': False, 'message': 'Срок действия кода истёк'}), 403
+    
+    users = load_data(USERS_FILE)
+    
+    # Проверяем, существует ли пользователь с таким username (email)
+    for user in users:
+        if user['username'] == email:
+            return jsonify({'success': False, 'message': 'Пользователь уже существует'}), 400
+    
+    # Валидация имени пользователя (если указано другое)
+    if username != email:
+        if len(username) < 3 or len(username) > 20:
+            return jsonify({'success': False, 'message': 'Имя пользователя должно быть от 3 до 20 символов'}), 400
+        for user in users:
+            if user['username'] == username:
+                return jsonify({'success': False, 'message': 'Имя пользователя уже занято'}), 400
+    
+    # Создаём пользователя
+    new_user = {
+        'id': len(users) + 1,
+        'username': username,
+        'email': email,
+        'password': request_data['password'],  # пароль из заявки
+        'avatar': None,
+        'bio': '',
+        'created_at': datetime.now().isoformat(),
+        'updated_at': datetime.now().isoformat(),
+        'following': [],
+        'followers': [],
+        'bookmarks': [],
+        'verified': False
+    }
+    users.append(new_user)
+    save_data(USERS_FILE, users)
+    
+    # Удаляем использованную заявку
+    requests = load_data(VERIFICATION_FILE)
+    requests = [r for r in requests if r['email'] != email]
+    save_data(VERIFICATION_FILE, requests)
+    
+    return jsonify({
+        'success': True,
+        'message': 'Регистрация завершена',
         'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
     })
 

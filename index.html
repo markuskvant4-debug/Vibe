@@ -397,12 +397,12 @@
                         <h2><i class="fas fa-sign-in-alt"></i> Вход в Vibe</h2>
                         <form id="login-form-element">
                             <div class="form-group">
-                                <label for="login-username">Имя пользователя</label>
-                                <input type="text" id="login-username" placeholder="Введите ваш никнейм" required>
+                                <label for="login-email">Email</label>
+                                <input type="email" id="login-email" placeholder="example@gmail.com" required autocomplete="email">
                             </div>
                             <div class="form-group">
                                 <label for="login-password">Пароль</label>
-                                <input type="password" id="login-password" placeholder="Введите пароль" required>
+                                <input type="password" id="login-password" placeholder="Введите пароль" required autocomplete="current-password">
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="cancel-login" class="btn btn-outline">Отмена</button>
@@ -415,20 +415,52 @@
                         <h2><i class="fas fa-user-plus"></i> Регистрация в Vibe</h2>
                         <form id="register-form-element">
                             <div class="form-group">
-                                <label for="register-username">Имя пользователя</label>
-                                <input type="text" id="register-username" placeholder="Придумайте уникальный никнейм" required>
+                                <label for="register-email">Email</label>
+                                <input type="email" id="register-email" placeholder="example@gmail.com" required autocomplete="email">
                             </div>
                             <div class="form-group">
                                 <label for="register-password">Пароль</label>
-                                <input type="password" id="register-password" placeholder="Придумайте надежный пароль" required>
+                                <input type="password" id="register-password" placeholder="Придумайте надёжный пароль" required autocomplete="new-password">
                             </div>
                             <div class="form-group">
                                 <label for="register-confirm">Подтверждение пароля</label>
-                                <input type="password" id="register-confirm" placeholder="Повторите пароль" required>
+                                <input type="password" id="register-confirm" placeholder="Повторите пароль" required autocomplete="new-password">
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="cancel-register" class="btn btn-outline">Отмена</button>
-                                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+                                <button type="submit" class="btn btn-primary">Получить код</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card verify-code-form hidden" id="verify-code-form">
+                        <h2><i class="fas fa-envelope-open-text"></i> Подтверждение email</h2>
+                        <p class="auth-hint" id="verify-code-hint">Код отправлен на вашу почту</p>
+                        <form id="verify-code-form-element">
+                            <div class="form-group">
+                                <label for="verify-code-input">Код из письма (6 цифр)</label>
+                                <input type="text" id="verify-code-input" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" required>
+                            </div>
+                            <p class="auth-hint small" id="verify-code-timer"></p>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-verify" class="btn btn-outline">Отмена</button>
+                                <button type="button" id="resend-code-btn" class="btn btn-outline" disabled>Отправить снова</button>
+                                <button type="submit" class="btn btn-primary">Подтвердить</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card nickname-form hidden" id="nickname-form">
+                        <h2><i class="fas fa-id-badge"></i> Выберите ник</h2>
+                        <p class="auth-hint">Можно пропустить — тогда ником станет ваш email. Осталось попыток: <span id="nickname-attempts-left">3</span></p>
+                        <form id="nickname-form-element">
+                            <div class="form-group">
+                                <label for="nickname-input">Никнейм</label>
+                                <input type="text" id="nickname-input" placeholder="От 3 до 20 символов" maxlength="20">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="skip-nickname" class="btn btn-outline">Пропустить</button>
+                                <button type="submit" class="btn btn-primary">Сохранить ник</button>
                             </div>
                         </form>
                     </div>

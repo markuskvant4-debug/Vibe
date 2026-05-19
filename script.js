@@ -27,6 +27,12 @@ const VibeApp = {
     
     // Видимость эмодзи-пикера
     emojiPickerVisible: false,
+
+    // Данные регистрации до подтверждения email
+    pendingRegistration: null,
+
+    // Таймер повторной отправки кода
+    resendTimerInterval: null,
     
     // Инициализация приложения
     init: function() {
@@ -37,6 +43,12 @@ const VibeApp = {
         
         // Назначаем обработчики событий
         this.bindEvents();
+
+        window.addEventListener('beforeunload', () => {
+            if (this.currentUser && this.currentUser.nickname_prompt_pending) {
+                this.finalizeNicknameSkip(true);
+            }
+        });
         
         // Загружаем посты
         this.loadPosts();
@@ -46,9 +58,22 @@ const VibeApp = {
         
         // Обновляем интерфейс в зависимости от авторизации
         this.updateUI();
+
+        if (this.currentUser && this.currentUser.nickname_prompt_pending) {
+            this.showNicknameForm(3);
+        }
         
         // Применяем сохраненную тему
         this.applyTheme();
+    },
+
+    getDeviceId: function() {
+        let deviceId = localStorage.getItem('vibe_device_id');
+        if (!deviceId) {
+            deviceId = 'dev_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + '_' + Math.random().toString(36).slice(2));
+            localStorage.setItem('vibe_device_id', deviceId);
+        }
+        return deviceId;
     },
     
     // Загрузка пользователя из localStorage
@@ -84,11 +109,20 @@ const VibeApp = {
         // Кнопки отмены форм
         document.getElementById('cancel-login').addEventListener('click', () => this.hideAuthForms());
         document.getElementById('cancel-register').addEventListener('click', () => this.hideAuthForms());
+        document.getElementById('cancel-verify').addEventListener('click', () => this.cancelVerification());
+        document.getElementById('resend-code-btn').addEventListener('click', () => this.resendVerificationCode());
+        document.getElementById('skip-nickname').addEventListener('click', () => this.finalizeNicknameSkip());
         document.getElementById('cancel-post').addEventListener('click', () => this.hideCreatePostForm());
         
         // Формы
         document.getElementById('login-form-element').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form-element').addEventListener('submit', (e) => this.handleRegister(e));
+        document.getElementById('verify-code-form-element').addEventListener('submit', (e) => this.handleVerifyCode(e));
+        document.getElementById('nickname-form-element').addEventListener('submit', (e) => this.handleSetNickname(e));
+
+        document.getElementById('verify-code-input').addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+        });
         document.getElementById('post-form').addEventListener('submit', (e) => this.handleCreatePost(e));
         
         // Обработка выбора файлов для поста
@@ -218,13 +252,106 @@ const VibeApp = {
     hideAllForms: function() {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('verify-code-form').classList.add('hidden');
+        document.getElementById('nickname-form').classList.add('hidden');
         document.getElementById('create-post-form').classList.add('hidden');
+        this.stopResendTimer();
     },
     
-    // Скрыть формы авторизации
+    // Скрыть формы авторизации (без формы ника)
     hideAuthForms: function() {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('verify-code-form').classList.add('hidden');
+        this.stopResendTimer();
+    },
+
+    showVerifyForm: function(email) {
+        this.hideAllForms();
+        document.getElementById('verify-code-hint').textContent = `Код отправлен на ${email}`;
+        document.getElementById('verify-code-input').value = '';
+        document.getElementById('verify-code-form').classList.remove('hidden');
+        this.updateResendCooldown();
+    },
+
+    showNicknameForm: function(attemptsLeft) {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('register-form').classList.add('hidden');
+        document.getElementById('verify-code-form').classList.add('hidden');
+        document.getElementById('create-post-form').classList.add('hidden');
+        const left = attemptsLeft !== undefined ? attemptsLeft : 3;
+        document.getElementById('nickname-attempts-left').textContent = left;
+        document.getElementById('nickname-input').value = '';
+        document.getElementById('nickname-form').classList.remove('hidden');
+    },
+
+    stopResendTimer: function() {
+        if (this.resendTimerInterval) {
+            clearInterval(this.resendTimerInterval);
+            this.resendTimerInterval = null;
+        }
+    },
+
+    updateResendCooldown: function() {
+        this.stopResendTimer();
+        const btn = document.getElementById('resend-code-btn');
+        const timerEl = document.getElementById('verify-code-timer');
+
+        const tick = () => {
+            this.apiRequest(`/api/register/resend-wait?device_id=${encodeURIComponent(this.getDeviceId())}`, 'GET')
+                .then(data => {
+                    const wait = data.resend_wait_seconds || 0;
+                    if (wait <= 0) {
+                        btn.disabled = false;
+                        btn.textContent = 'Отправить снова';
+                        timerEl.textContent = 'Можно отправить код повторно';
+                        this.stopResendTimer();
+                        return;
+                    }
+                    const min = Math.floor(wait / 60);
+                    const sec = wait % 60;
+                    btn.disabled = true;
+                    btn.textContent = 'Отправить снова';
+                    timerEl.textContent = min > 0
+                        ? `Повторная отправка через ${min} мин. ${sec} сек.`
+                        : `Повторная отправка через ${sec} сек.`;
+                })
+                .catch(() => {});
+        };
+
+        tick();
+        this.resendTimerInterval = setInterval(tick, 1000);
+    },
+
+    cancelVerification: function() {
+        this.pendingRegistration = null;
+        this.hideAuthForms();
+        this.showRegisterForm();
+    },
+
+    resendVerificationCode: function() {
+        if (!this.pendingRegistration) {
+            alert('Сначала заполните форму регистрации');
+            this.showRegisterForm();
+            return;
+        }
+
+        const { email, password } = this.pendingRegistration;
+        this.apiRequest('/api/register/send-code', 'POST', {
+            email,
+            password,
+            device_id: this.getDeviceId()
+        })
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    this.updateResendCooldown();
+                } else {
+                    alert(data.message || 'Не удалось отправить код');
+                    this.updateResendCooldown();
+                }
+            })
+            .catch(() => alert('Ошибка соединения с сервером'));
     },
     
     // Скрыть форму создания поста
@@ -254,15 +381,15 @@ const VibeApp = {
     handleLogin: function(e) {
         e.preventDefault();
         
-        const username = document.getElementById('login-username').value.trim();
+        const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value.trim();
         
-        if (!username || !password) {
+        if (!email || !password) {
             alert('Заполните все поля');
             return;
         }
         
-        this.apiRequest('/api/login', 'POST', { username, password })
+        this.apiRequest('/api/login', 'POST', { email, password })
             .then(data => {
                 if (data.success) {
                     this.currentUser = data.user;
@@ -271,6 +398,9 @@ const VibeApp = {
                     this.hideAuthForms();
                     alert('Вход выполнен успешно!');
                     this.loadPosts();
+                    if (this.currentUser.nickname_prompt_pending) {
+                        this.showNicknameForm(3);
+                    }
                 } else {
                     alert('Ошибка: ' + data.message);
                 }
@@ -281,15 +411,15 @@ const VibeApp = {
             });
     },
     
-    // Обработка регистрации
+    // Запрос кода регистрации
     handleRegister: function(e) {
         e.preventDefault();
         
-        const username = document.getElementById('register-username').value.trim();
+        const email = document.getElementById('register-email').value.trim();
         const password = document.getElementById('register-password').value.trim();
         const confirmPassword = document.getElementById('register-confirm').value.trim();
         
-        if (!username || !password || !confirmPassword) {
+        if (!email || !password || !confirmPassword) {
             alert('Заполните все поля');
             return;
         }
@@ -304,21 +434,122 @@ const VibeApp = {
             return;
         }
         
-        this.apiRequest('/api/register', 'POST', { username, password })
+        this.apiRequest('/api/register/send-code', 'POST', {
+            email,
+            password,
+            device_id: this.getDeviceId()
+        })
             .then(data => {
                 if (data.success) {
-                    alert('Регистрация успешна! Теперь вы можете войти.');
-                    this.showLoginForm();
-                    // Автоматически заполняем форму входа
-                    document.getElementById('login-username').value = username;
-                    document.getElementById('login-password').value = password;
+                    this.pendingRegistration = { email, password };
+                    alert(data.message);
+                    this.showVerifyForm(email);
                 } else {
-                    alert('Ошибка: ' + data.message);
+                    alert(data.message || 'Не удалось отправить код');
+                    if (data.resend_wait_seconds) {
+                        this.pendingRegistration = { email, password };
+                        this.showVerifyForm(email);
+                    }
                 }
             })
             .catch(error => {
                 console.error('Ошибка регистрации:', error);
                 alert('Ошибка соединения с сервером');
+            });
+    },
+
+    handleVerifyCode: function(e) {
+        e.preventDefault();
+
+        if (!this.pendingRegistration) {
+            alert('Сначала заполните форму регистрации');
+            this.showRegisterForm();
+            return;
+        }
+
+        const code = document.getElementById('verify-code-input').value.trim();
+        const { email } = this.pendingRegistration;
+
+        if (code.length !== 6) {
+            alert('Введите 6-значный код');
+            return;
+        }
+
+        this.apiRequest('/api/register/verify-code', 'POST', { email, code })
+            .then(data => {
+                if (data.success) {
+                    this.pendingRegistration = null;
+                    this.currentUser = data.user;
+                    this.saveUserToStorage(this.currentUser);
+                    this.updateUI();
+                    this.hideAuthForms();
+                    this.loadPosts();
+                    alert('Регистрация завершена! Вы вошли в аккаунт.');
+                    this.showNicknameForm(data.nickname_attempts_left || 3);
+                } else {
+                    alert(data.message || 'Неверный код');
+                }
+            })
+            .catch(() => alert('Ошибка соединения с сервером'));
+    },
+
+    handleSetNickname: function(e) {
+        e.preventDefault();
+
+        if (!this.currentUser) return;
+
+        const nickname = document.getElementById('nickname-input').value.trim();
+        if (!nickname) {
+            this.finalizeNicknameSkip();
+            return;
+        }
+
+        this.apiRequest('/api/register/set-nickname', 'POST', {
+            user_id: this.currentUser.id,
+            nickname
+        })
+            .then(data => {
+                if (data.success) {
+                    this.currentUser = data.user;
+                    this.saveUserToStorage(this.currentUser);
+                    this.updateUI();
+                    document.getElementById('nickname-form').classList.add('hidden');
+                    alert(data.message);
+                } else {
+                    const left = data.attempts_left !== undefined ? data.attempts_left : 0;
+                    document.getElementById('nickname-attempts-left').textContent = left;
+                    alert(data.message || 'Не удалось установить ник');
+                    if (left <= 0) {
+                        this.finalizeNicknameSkip(true);
+                    }
+                }
+            })
+            .catch(() => alert('Ошибка соединения с сервером'));
+    },
+
+    finalizeNicknameSkip: function(silent) {
+        if (!this.currentUser || !this.currentUser.nickname_prompt_pending) {
+            document.getElementById('nickname-form').classList.add('hidden');
+            return;
+        }
+
+        this.apiRequest('/api/register/set-nickname', 'POST', {
+            user_id: this.currentUser.id,
+            skip: true
+        })
+            .then(data => {
+                if (data.success) {
+                    this.currentUser = data.user;
+                    this.saveUserToStorage(this.currentUser);
+                    this.updateUI();
+                }
+                document.getElementById('nickname-form').classList.add('hidden');
+                if (!silent) {
+                    alert('Ник не выбран — используется ваш email');
+                }
+            })
+            .catch(() => {
+                document.getElementById('nickname-form').classList.add('hidden');
             });
     },
     

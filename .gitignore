@@ -1,0 +1,5 @@
+.env
+__pycache__/
+*.pyc
+pending_registrations.json
+email_send_limits.json

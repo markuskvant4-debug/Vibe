@@ -1111,6 +1111,25 @@ body {
     display: none !important;
 }
 
+.auth-hint {
+    color: #aaa;
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.auth-hint.small {
+    font-size: 0.9rem;
+    margin-top: -8px;
+    margin-bottom: 12px;
+}
+
+.code-input {
+    font-size: 1.5rem;
+    letter-spacing: 0.35em;
+    text-align: center;
+    font-family: 'Roboto', monospace;
+}
+
 .loading-posts {
     text-align: center;
     padding: 40px;

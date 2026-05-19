@@ -2,17 +2,10 @@ from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import json
 import os
-import re
 import uuid
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
 
 app = Flask(__name__)
 CORS(app)  # Разрешаем запросы с фронтенда
@@ -31,16 +24,6 @@ POSTS_FILE = 'posts.json'
 CHAT_FILE = 'chat_messages.json'
 LOGIN_ATTEMPTS_FILE = 'login_attempts.json'
 VERIFICATION_FILE = 'verification_requests.json'
-PENDING_REGISTRATIONS_FILE = 'pending_registrations.json'
-EMAIL_SEND_LIMITS_FILE = 'email_send_limits.json'
-
-GMAIL_USER = os.environ.get('GMAIL_USER', 'markuskvant4@gmail.com')
-GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
-CODE_VALID_MINUTES = 15
-RESEND_COOLDOWN_MINUTES = 7
-MAX_CODE_ATTEMPTS = 3
-MAX_NICKNAME_ATTEMPTS = 3
-EMAIL_REGEX = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 # Создаем папки если их нет
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -133,6 +116,7 @@ def reset_login_attempts(ip_address):
         save_login_attempts(attempts)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def load_json_dict(filename):
     if not os.path.exists(filename):
         return {}
@@ -224,6 +208,8 @@ def check_user_password(user, password):
 
 =======
 >>>>>>> parent of 3e4a103 (Исправление добавения)
+=======
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
 # Инициализация файлов если их нет
 if not os.path.exists(USERS_FILE):
     save_data(USERS_FILE, [])
@@ -234,12 +220,15 @@ if not os.path.exists(CHAT_FILE):
 if not os.path.exists(LOGIN_ATTEMPTS_FILE):
     save_login_attempts({})
 <<<<<<< HEAD
+<<<<<<< HEAD
 if not os.path.exists(PENDING_REGISTRATIONS_FILE):
     save_json_dict(PENDING_REGISTRATIONS_FILE, {})
 if not os.path.exists(EMAIL_SEND_LIMITS_FILE):
     save_json_dict(EMAIL_SEND_LIMITS_FILE, {})
 =======
 >>>>>>> parent of 3e4a103 (Исправление добавения)
+=======
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
 
 @app.route('/')
 def serve_index():
@@ -257,6 +246,7 @@ def serve_uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # API endpoints — регистрация по email
 @app.route('/api/register/send-code', methods=['POST'])
 def register_send_code():
@@ -270,116 +260,40 @@ def register_send_code():
         return jsonify({'success': False, 'message': 'Email и пароль обязательны'}), 400
     if not is_valid_email(email):
         return jsonify({'success': False, 'message': 'Некорректный email'}), 400
+=======
+# API endpoints
+@app.route('/api/register', methods=['POST'])
+def register():
+    """Регистрация нового пользователя"""
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Имя пользователя и пароль обязательны'}), 400
+    
+    users = load_data(USERS_FILE)
+    
+    # Проверяем, существует ли пользователь
+    for user in users:
+        if user['username'] == username:
+            return jsonify({'success': False, 'message': 'Пользователь уже существует'}), 400
+    
+    # Валидация длины пароля
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     if len(password) < 4:
         return jsonify({'success': False, 'message': 'Пароль должен содержать минимум 4 символа'}), 400
-    if not device_id:
-        return jsonify({'success': False, 'message': 'Не удалось определить устройство'}), 400
-
-    wait_seconds = get_device_resend_wait(device_id)
-    if wait_seconds > 0:
-        minutes = wait_seconds // 60
-        seconds = wait_seconds % 60
-        if minutes > 0:
-            msg = f'Повторная отправка кода возможна через {minutes} мин. {seconds} сек.'
-        else:
-            msg = f'Повторная отправка кода возможна через {seconds} сек.'
-        return jsonify({
-            'success': False,
-            'message': msg,
-            'resend_wait_seconds': wait_seconds
-        }), 429
-
-    users = load_data(USERS_FILE)
-    if find_user_by_email(users, email):
-        return jsonify({'success': False, 'message': 'Пользователь с таким email уже зарегистрирован'}), 400
-
-    code = generate_verification_code()
-    try:
-        send_verification_email(email, code)
-    except Exception as e:
-        print(f'[EMAIL ERROR] {e}')
-        return jsonify({
-            'success': False,
-            'message': 'Не удалось отправить письмо. Проверьте настройки почты на сервере.'
-        }), 500
-
-    pending = load_json_dict(PENDING_REGISTRATIONS_FILE)
-    pending[email] = {
-        'password': password,
-        'code': code,
-        'expires_at': (datetime.now() + timedelta(minutes=CODE_VALID_MINUTES)).isoformat(),
-        'code_attempts': 0,
-        'device_id': device_id,
-        'created_at': datetime.now().isoformat(),
-    }
-    save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-    record_device_send(device_id)
-
-    return jsonify({
-        'success': True,
-        'message': f'Код отправлен на {email}',
-        'expires_in_minutes': CODE_VALID_MINUTES,
-        'resend_wait_seconds': RESEND_COOLDOWN_MINUTES * 60,
-    })
-
-@app.route('/api/register/resend-wait', methods=['GET'])
-def register_resend_wait():
-    device_id = (request.args.get('device_id') or '').strip()
-    if not device_id:
-        return jsonify({'success': False, 'resend_wait_seconds': 0}), 400
-    wait_seconds = get_device_resend_wait(device_id)
-    return jsonify({'success': True, 'resend_wait_seconds': wait_seconds})
-
-@app.route('/api/register/verify-code', methods=['POST'])
-def register_verify_code():
-    """Проверка кода и создание аккаунта"""
-    data = request.json or {}
-    email = normalize_email(data.get('email'))
-    code = (data.get('code') or '').strip()
-
-    if not email or not code:
-        return jsonify({'success': False, 'message': 'Email и код обязательны'}), 400
-    if not re.fullmatch(r'\d{6}', code):
-        return jsonify({'success': False, 'message': 'Код должен состоять из 6 цифр'}), 400
-
-    pending = load_json_dict(PENDING_REGISTRATIONS_FILE)
-    registration = pending.get(email)
-    if not registration:
-        return jsonify({'success': False, 'message': 'Сначала запросите код регистрации'}), 400
-
-    expires_at = datetime.fromisoformat(registration['expires_at'])
-    if datetime.now() > expires_at:
-        del pending[email]
-        save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-        return jsonify({'success': False, 'message': 'Срок действия кода истёк. Запросите новый.'}), 400
-
-    if registration.get('code_attempts', 0) >= MAX_CODE_ATTEMPTS:
-        del pending[email]
-        save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-        return jsonify({
-            'success': False,
-            'message': 'Превышено число попыток. Запросите новый код.'
-        }), 400
-
-    if registration['code'] != code:
-        registration['code_attempts'] = registration.get('code_attempts', 0) + 1
-        pending[email] = registration
-        save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-        left = MAX_CODE_ATTEMPTS - registration['code_attempts']
-        return jsonify({
-            'success': False,
-            'message': f'Неверный код. Осталось попыток: {max(0, left)}',
-            'attempts_left': max(0, left),
-        }), 400
-
-    users = load_data(USERS_FILE)
-    if find_user_by_email(users, email):
-        del pending[email]
-        save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-        return jsonify({'success': False, 'message': 'Пользователь уже зарегистрирован'}), 400
-
-    new_id = max((u.get('id', 0) for u in users), default=0) + 1
+    
+    # Валидация имени пользователя
+    if len(username) < 3 or len(username) > 20:
+        return jsonify({'success': False, 'message': 'Имя пользователя должно быть от 3 до 20 символов'}), 400
+    
+    # Сохраняем пароль в plain-text (по требованию пользователя)
+    # Хэширование отключено для соответствия требованиям безопасности пользователя
+    
+    # Создаем нового пользователя
     new_user = {
+<<<<<<< HEAD
         'id': new_id,
         'email': email,
         'username': email,
@@ -420,10 +334,16 @@ def register():
         'username': username,
         'password': password,  # Plain-text пароль
 >>>>>>> parent of 3e4a103 (Исправление добавения)
+=======
+        'id': len(users) + 1,
+        'username': username,
+        'password': password,  # Plain-text пароль
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
         'avatar': None,
         'bio': '',
         'created_at': datetime.now().isoformat(),
         'updated_at': datetime.now().isoformat(),
+<<<<<<< HEAD
 <<<<<<< HEAD
         'following': [],
         'followers': [],
@@ -431,14 +351,19 @@ def register():
         'verified': False,
         'nickname_prompt_pending': True,
         'nickname_attempts': 0,
+=======
+        'following': [],   # ID пользователей, на которых подписан
+        'followers': [],   # ID подписчиков
+        'bookmarks': [],   # ID постов в закладках
+        'verified': False  # Статус верификации по умолчанию
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     }
+    
     users.append(new_user)
     save_data(USERS_FILE, users)
-
-    del pending[email]
-    save_json_dict(PENDING_REGISTRATIONS_FILE, pending)
-
+    
     return jsonify({
+<<<<<<< HEAD
         'success': True,
         'message': 'Email подтверждён',
         'user': user_public_data(new_user),
@@ -551,18 +476,24 @@ def register_set_nickname():
         'message': 'Регистрация успешна',
         'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
 >>>>>>> parent of 3e4a103 (Исправление добавения)
+=======
+        'success': True, 
+        'message': 'Регистрация успешна',
+        'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
+>>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     })
 
 @app.route('/api/login', methods=['POST'])
 def login():
-    """Авторизация по email и паролю"""
-    data = request.json or {}
-    email = normalize_email(data.get('email') or data.get('username'))
-    password = data.get('password', '')
-
-    if not email or not password:
-        return jsonify({'success': False, 'message': 'Email и пароль обязательны'}), 400
-
+    """Авторизация пользователя"""
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Имя пользователя и пароль обязательны'}), 400
+    
+    # Проверка блокировки по IP
     ip_address = request.remote_addr
     if is_ip_blocked(ip_address):
         attempts = load_login_attempts()
@@ -574,28 +505,57 @@ def login():
             minutes = int(remaining.total_seconds() / 60) + 1
             return jsonify({
                 'success': False,
-                'message': f'IP-адрес заблокирован. Попробуйте через {minutes} минут.'
+                'message': f'IP-адрес заблокирован из-за 3 неудачных попыток входа. Попробуйте через {minutes} минут.'
             }), 403
-        return jsonify({
-            'success': False,
-            'message': 'IP-адрес заблокирован. Попробуйте через 20 минут.'
-        }), 403
-
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'IP-адрес заблокирован из-за 3 неудачных попыток входа. Попробуйте через 20 минут.'
+            }), 403
+    
     users = load_data(USERS_FILE)
-    user = find_user_by_login(users, email)
-
-    if user and check_user_password(user, password):
-        reset_login_attempts(ip_address)
-        if user.get('nickname_prompt_pending') and user.get('username') == user.get('email'):
-            pass
-        return jsonify({
-            'success': True,
-            'message': 'Вход выполнен',
-            'user': user_public_data(user),
-        })
-
+    
+    for user in users:
+        if user['username'] == username:
+            # Проверяем пароль (поддерживаем как старые plain-text, так и хэшированные)
+            stored_password = user.get('password', '')
+            if stored_password.startswith('pbkdf2:sha256:'):
+                # Хэшированный пароль
+                if check_password_hash(stored_password, password):
+                    # Успешный вход - сбрасываем счётчик попыток
+                    reset_login_attempts(ip_address)
+                    return jsonify({
+                        'success': True,
+                        'message': 'Вход выполнен',
+                        'user': {
+                            'id': user['id'],
+                            'username': user['username'],
+                            'avatar': user.get('avatar'),
+                            'bio': user.get('bio', '')
+                        }
+                    })
+            else:
+                # Plain-text пароль (для обратной совместимости)
+                if stored_password == password:
+                    # Успешный вход - сбрасываем счётчик попыток
+                    reset_login_attempts(ip_address)
+                    return jsonify({
+                        'success': True,
+                        'message': 'Вход выполнен',
+                        'user': {
+                            'id': user['id'],
+                            'username': user['username'],
+                            'avatar': user.get('avatar'),
+                            'bio': user.get('bio', '')
+                        }
+                    })
+            # Если пароль не совпал (неправильный пароль для найденного пользователя)
+            record_failed_attempt(ip_address)
+            return jsonify({'success': False, 'message': 'Неверное имя пользователя или пароль'}), 401
+    
+    # Пользователь не найден
     record_failed_attempt(ip_address)
-    return jsonify({'success': False, 'message': 'Неверный email или пароль'}), 401
+    return jsonify({'success': False, 'message': 'Неверное имя пользователя или пароль'}), 401
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():

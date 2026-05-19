@@ -35,7 +35,7 @@ PENDING_REGISTRATIONS_FILE = 'pending_registrations.json'
 EMAIL_SEND_LIMITS_FILE = 'email_send_limits.json'
 
 GMAIL_USER = os.environ.get('GMAIL_USER', 'markuskvant4@gmail.com')
-GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', 'nhzvychwqzvgichi')
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD', '')
 CODE_VALID_MINUTES = 15
 RESEND_COOLDOWN_MINUTES = 7
 MAX_CODE_ATTEMPTS = 3

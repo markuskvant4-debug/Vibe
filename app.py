@@ -4,9 +4,6 @@ import json
 import os
 import re
 import uuid
-import random
-import smtplib
-from email.mime.text import MIMEText
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -135,6 +132,7 @@ def reset_login_attempts(ip_address):
         del attempts[ip_address]
         save_login_attempts(attempts)
 
+<<<<<<< HEAD
 def load_json_dict(filename):
     if not os.path.exists(filename):
         return {}
@@ -224,6 +222,8 @@ def check_user_password(user, password):
         return check_password_hash(stored_password, password)
     return stored_password == password
 
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
 # Инициализация файлов если их нет
 if not os.path.exists(USERS_FILE):
     save_data(USERS_FILE, [])
@@ -233,10 +233,13 @@ if not os.path.exists(CHAT_FILE):
     save_data(CHAT_FILE, [])
 if not os.path.exists(LOGIN_ATTEMPTS_FILE):
     save_login_attempts({})
+<<<<<<< HEAD
 if not os.path.exists(PENDING_REGISTRATIONS_FILE):
     save_json_dict(PENDING_REGISTRATIONS_FILE, {})
 if not os.path.exists(EMAIL_SEND_LIMITS_FILE):
     save_json_dict(EMAIL_SEND_LIMITS_FILE, {})
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
 
 @app.route('/')
 def serve_index():
@@ -253,6 +256,7 @@ def serve_uploaded_file(filename):
     """Отдает загруженные файлы"""
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+<<<<<<< HEAD
 # API endpoints — регистрация по email
 @app.route('/api/register/send-code', methods=['POST'])
 def register_send_code():
@@ -380,10 +384,47 @@ def register_verify_code():
         'email': email,
         'username': email,
         'password': registration['password'],
+=======
+# API endpoints
+@app.route('/api/register', methods=['POST'])
+def register():
+    """Регистрация нового пользователя"""
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'success': False, 'message': 'Имя пользователя и пароль обязательны'}), 400
+    
+    users = load_data(USERS_FILE)
+    
+    # Проверяем, существует ли пользователь
+    for user in users:
+        if user['username'] == username:
+            return jsonify({'success': False, 'message': 'Пользователь уже существует'}), 400
+    
+    # Валидация длины пароля
+    if len(password) < 4:
+        return jsonify({'success': False, 'message': 'Пароль должен содержать минимум 4 символа'}), 400
+    
+    # Валидация имени пользователя
+    if len(username) < 3 or len(username) > 20:
+        return jsonify({'success': False, 'message': 'Имя пользователя должно быть от 3 до 20 символов'}), 400
+    
+    # Сохраняем пароль в plain-text (по требованию пользователя)
+    # Хэширование отключено для соответствия требованиям безопасности пользователя
+    
+    # Создаем нового пользователя
+    new_user = {
+        'id': len(users) + 1,
+        'username': username,
+        'password': password,  # Plain-text пароль
+>>>>>>> parent of 3e4a103 (Исправление добавения)
         'avatar': None,
         'bio': '',
         'created_at': datetime.now().isoformat(),
         'updated_at': datetime.now().isoformat(),
+<<<<<<< HEAD
         'following': [],
         'followers': [],
         'bookmarks': [],
@@ -495,6 +536,21 @@ def register_set_nickname():
         'success': True,
         'message': 'Ник установлен',
         'user': user_public_data(user),
+=======
+        'following': [],   # ID пользователей, на которых подписан
+        'followers': [],   # ID подписчиков
+        'bookmarks': [],   # ID постов в закладках
+        'verified': False  # Статус верификации по умолчанию
+    }
+    
+    users.append(new_user)
+    save_data(USERS_FILE, users)
+    
+    return jsonify({
+        'success': True, 
+        'message': 'Регистрация успешна',
+        'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
+>>>>>>> parent of 3e4a103 (Исправление добавения)
     })
 
 @app.route('/api/login', methods=['POST'])

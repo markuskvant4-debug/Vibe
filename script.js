@@ -27,12 +27,15 @@ const VibeApp = {
     
     // Видимость эмодзи-пикера
     emojiPickerVisible: false,
+<<<<<<< HEAD
 
     // Данные регистрации до подтверждения email
     pendingRegistration: null,
 
     // Таймер повторной отправки кода
     resendTimerInterval: null,
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
     
     // Инициализация приложения
     init: function() {
@@ -117,12 +120,15 @@ const VibeApp = {
         // Формы
         document.getElementById('login-form-element').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form-element').addEventListener('submit', (e) => this.handleRegister(e));
+<<<<<<< HEAD
         document.getElementById('verify-code-form-element').addEventListener('submit', (e) => this.handleVerifyCode(e));
         document.getElementById('nickname-form-element').addEventListener('submit', (e) => this.handleSetNickname(e));
 
         document.getElementById('verify-code-input').addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
         });
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
         document.getElementById('post-form').addEventListener('submit', (e) => this.handleCreatePost(e));
         
         // Обработка выбора файлов для поста
@@ -255,13 +261,17 @@ const VibeApp = {
         document.getElementById('verify-code-form').classList.add('hidden');
         document.getElementById('nickname-form').classList.add('hidden');
         document.getElementById('create-post-form').classList.add('hidden');
+<<<<<<< HEAD
         this.stopResendTimer();
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
     },
     
     // Скрыть формы авторизации (без формы ника)
     hideAuthForms: function() {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
+<<<<<<< HEAD
         document.getElementById('verify-code-form').classList.add('hidden');
         this.stopResendTimer();
     },
@@ -352,6 +362,8 @@ const VibeApp = {
                 }
             })
             .catch(() => alert('Ошибка соединения с сервером'));
+=======
+>>>>>>> parent of 3e4a103 (Исправление добавения)
     },
     
     // Скрыть форму создания поста

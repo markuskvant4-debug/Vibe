@@ -28,14 +28,6 @@ const VibeApp = {
     // Видимость эмодзи-пикера
     emojiPickerVisible: false,
     
-    // Верификация email
-    pendingEmail: null,
-    pendingPassword: null,
-    verificationTimer: null,
-    resendTimer: null,
-    resendCooldown: 7 * 60, // 7 минут в секундах
-    attemptsLeft: 3,
-    
     // Инициализация приложения
     init: function() {
         console.log('Инициализация социальной сети Vibe...');
@@ -93,13 +85,10 @@ const VibeApp = {
         document.getElementById('cancel-login').addEventListener('click', () => this.hideAuthForms());
         document.getElementById('cancel-register').addEventListener('click', () => this.hideAuthForms());
         document.getElementById('cancel-post').addEventListener('click', () => this.hideCreatePostForm());
-        document.getElementById('cancel-verification').addEventListener('click', () => this.hideVerificationForm());
-        document.getElementById('resend-code').addEventListener('click', () => this.resendVerificationCode());
         
         // Формы
         document.getElementById('login-form-element').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form-element').addEventListener('submit', (e) => this.handleRegister(e));
-        document.getElementById('verification-form-element').addEventListener('submit', (e) => this.handleVerification(e));
         document.getElementById('post-form').addEventListener('submit', (e) => this.handleCreatePost(e));
         
         // Обработка выбора файлов для поста
@@ -230,14 +219,12 @@ const VibeApp = {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
         document.getElementById('create-post-form').classList.add('hidden');
-        document.getElementById('verification-form').classList.add('hidden');
     },
     
     // Скрыть формы авторизации
     hideAuthForms: function() {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
-        document.getElementById('verification-form').classList.add('hidden');
     },
     
     // Скрыть форму создания поста

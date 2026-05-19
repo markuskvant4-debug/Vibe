@@ -415,9 +415,8 @@
                         <h2><i class="fas fa-user-plus"></i> Регистрация в Vibe</h2>
                         <form id="register-form-element">
                             <div class="form-group">
-                                <label for="register-email">Электронная почта</label>
-                                <input type="email" id="register-email" placeholder="Введите вашу почту" required>
-                                <small class="form-text">На эту почту будет отправлен код подтверждения</small>
+                                <label for="register-username">Имя пользователя</label>
+                                <input type="text" id="register-username" placeholder="Придумайте уникальный никнейм" required>
                             </div>
                             <div class="form-group">
                                 <label for="register-password">Пароль</label>
@@ -429,32 +428,7 @@
                             </div>
                             <div class="form-actions">
                                 <button type="button" id="cancel-register" class="btn btn-outline">Отмена</button>
-                                <button type="submit" class="btn btn-primary">Отправить код</button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="card verification-form hidden" id="verification-form">
-                        <h2><i class="fas fa-envelope"></i> Подтверждение почты</h2>
-                        <div class="verification-info">
-                            <p>Код подтверждения отправлен на <span id="verification-email"></span></p>
-                            <p class="small-text">Код действителен в течение 15 минут</p>
-                        </div>
-                        <form id="verification-form-element">
-                            <div class="form-group">
-                                <label for="verification-code">6-значный код</label>
-                                <input type="text" id="verification-code" placeholder="Введите код из письма" maxlength="6" pattern="[0-9]{6}" required>
-                                <div class="attempts-counter">Осталось попыток: <span id="attempts-left">3</span></div>
-                            </div>
-                            <div class="form-group">
-                                <label for="register-username-final">Имя пользователя (необязательно)</label>
-                                <input type="text" id="register-username-final" placeholder="Если не укажете, будет использована почта">
-                                <small class="form-text">Можно изменить позже в настройках профиля</small>
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" id="cancel-verification" class="btn btn-outline">Отмена</button>
-                                <button type="button" id="resend-code" class="btn btn-outline" disabled>Отправить повторно (7 мин)</button>
-                                <button type="submit" class="btn btn-primary">Подтвердить</button>
+                                <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
                             </div>
                         </form>
                     </div>
@@ -472,34 +446,6 @@
                 <a href="#">Поддержка</a>
             </div>
         </footer>
-
-        <!-- Мобильная нижняя панель навигации -->
-        <div class="mobile-bottom-nav">
-            <a href="#" class="mobile-nav-item" data-page="feed">
-                <i class="fas fa-home"></i>
-                <span class="mobile-nav-label">Лента</span>
-            </a>
-            <a href="#" class="mobile-nav-item" data-page="popular">
-                <i class="fas fa-fire"></i>
-                <span class="mobile-nav-label">Популярное</span>
-            </a>
-            <a href="#" class="mobile-nav-item" data-page="profile" id="mobile-profile-nav-btn">
-                <i class="fas fa-user"></i>
-                <span class="mobile-nav-label">Профиль</span>
-            </a>
-            <a href="#" class="mobile-nav-item" data-page="create-post" id="mobile-create-post-btn">
-                <i class="fas fa-plus-circle"></i>
-                <span class="mobile-nav-label">Создать</span>
-            </a>
-            <a href="#" class="mobile-nav-item" data-page="chat">
-                <i class="fas fa-comments"></i>
-                <span class="mobile-nav-label">Чат</span>
-            </a>
-            <a href="#" class="mobile-nav-item" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span class="mobile-nav-label">Настройки</span>
-            </a>
-        </div>
     </div>
 
     <!-- Модальное окно для медиа -->

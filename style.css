@@ -7,8 +7,8 @@
 
 body {
     font-family: 'Roboto', sans-serif;
-    background: linear-gradient(135deg, #ffffff, #f5f5f5, #e0e0e0);
-    color: #222;
+    background: linear-gradient(135deg, #0d1117, #161b22, #0d1117);
+    color: #c9d1d9;
     min-height: 100vh;
     line-height: 1.6;
 }
@@ -508,151 +508,208 @@ body {
     line-height: 1.7;
 }
 
-/* Файлы в постах */
+/* Файлы в постах — современный медиа-формат */
 .post-files {
-    margin: 20px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
+    margin: 15px 0;
 }
 
-.post-file {
-    background: rgba(20, 20, 35, 0.5);
-    border-radius: 10px;
+/* Сетка изображений */
+.media-grid {
+    display: grid;
+    gap: 4px;
+    border-radius: 12px;
     overflow: hidden;
-    width: 150px;
-    cursor: pointer;
-    transition: transform 0.3s ease;
+    margin-bottom: 12px;
 }
 
-.post-file:hover {
+.media-grid-single {
+    grid-template-columns: 1fr;
+}
+
+.media-grid-two {
+    grid-template-columns: 1fr 1fr;
+}
+
+.media-grid-three {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+}
+
+.media-grid-three .media-grid-item:first-child {
+    grid-column: 1 / -1;
+}
+
+.media-grid-many {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+}
+
+.media-grid-item {
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    aspect-ratio: 16/10;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.media-grid-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    display: block;
+}
+
+.media-grid-item:hover img {
     transform: scale(1.05);
 }
 
-.post-file-image {
-    width: 100%;
-    height: 100px;
-    object-fit: cover;
-}
-
-.post-file-video, .post-file-audio, .post-file-other {
-    width: 100%;
-    height: 100px;
+.media-grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 2rem;
-    color: #ff6b81;
+    font-weight: bold;
+    color: white;
+}
+
+/* Видео */
+.media-video {
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
     background: rgba(0, 0, 0, 0.3);
 }
 
-.post-file-info {
-    padding: 10px;
+.media-video video {
+    width: 100%;
+    max-height: 500px;
+    display: block;
+    background: #000;
 }
 
-.post-file-name {
+.media-video-name {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Аудио */
+.media-audio {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(20, 20, 35, 0.7);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.media-audio-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff4757, #ff6b81);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.media-audio-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.media-audio-name {
+    font-size: 0.85rem;
+    color: #ccc;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.media-audio .audio-player {
+    width: 100%;
+    height: 32px;
+}
+
+.media-audio .btn-icon.btn-small {
+    flex-shrink: 0;
+}
+
+/* Остальные файлы */
+.media-others {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.media-other-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(20, 20, 35, 0.5);
+    border-radius: 10px;
+    text-decoration: none;
+    color: #ccc;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.media-other-item:hover {
+    background: rgba(30, 30, 50, 0.8);
+    border-color: rgba(255, 107, 129, 0.3);
+    color: white;
+}
+
+.media-other-item i.fa-file {
+    font-size: 1.2rem;
+    color: #ff6b81;
+}
+
+.media-other-name {
+    flex: 1;
     font-size: 0.9rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.post-file-type {
-    font-size: 0.8rem;
-    color: #888;
-}
-
-/* Новые стили для файлов в постах (совместимые с renderPostFiles) */
-.post-file-item {
-    background: rgba(20, 20, 35, 0.7);
-    border-radius: 12px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    gap: 15px;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 10px;
-}
-
-.post-file-item:hover {
-    background: rgba(30, 30, 50, 0.9);
-    border-color: rgba(255, 107, 129, 0.5);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.file-thumbnail {
-    flex-shrink: 0;
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.3);
-}
-
-.post-file-image .file-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    max-height: 300px;
-    border-radius: 6px;
-}
-
-/* Ограничение изображений внутри поста */
-.post-content img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-    margin: 10px 0;
-}
-
-/* Индикатор непрочитанных сообщений */
-.chat-user-unread {
-    background: #ff4757;
-    color: white;
+.media-other-ext {
     font-size: 0.75rem;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #888;
+    flex-shrink: 0;
 }
 
-.post-file-video .file-thumbnail,
-.post-file-audio .file-thumbnail,
-.post-file-other .file-thumbnail {
-    font-size: 2rem;
+.media-other-dl {
+    color: #888;
+    font-size: 0.85rem;
+}
+
+.media-other-item:hover .media-other-dl {
     color: #ff6b81;
 }
 
-.file-info {
-    flex: 1;
-    min-width: 0; /* Для корректного обрезания текста */
-}
-
-.file-name {
-    font-size: 1rem;
-    font-weight: 500;
-    color: #f0f0f0;
-    margin-bottom: 5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.file-actions {
-    display: flex;
-    gap: 10px;
-}
-
+/* Общие кнопки для медиа */
 .btn-icon.btn-small {
     padding: 6px 10px;
     background: rgba(255, 255, 255, 0.1);
@@ -676,23 +733,29 @@ body {
 .audio-player {
     width: 100%;
     height: 30px;
-    margin-bottom: 5px;
 }
 
-.post-files-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #ff6b81;
-    margin-bottom: 15px;
+/* Ограничение изображений внутри поста */
+.post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+/* Индикатор непрочитанных сообщений */
+.chat-user-unread {
+    background: #ff4757;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
-    gap: 8px;
-}
-
-.post-files-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    justify-content: center;
+    margin-left: auto;
 }
 
 .video-preview {

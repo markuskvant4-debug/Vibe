@@ -115,101 +115,6 @@ def reset_login_attempts(ip_address):
         del attempts[ip_address]
         save_login_attempts(attempts)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-def load_json_dict(filename):
-    if not os.path.exists(filename):
-        return {}
-    with open(filename, 'r', encoding='utf-8') as f:
-        try:
-            data = json.load(f)
-            return data if isinstance(data, dict) else {}
-        except json.JSONDecodeError:
-            return {}
-
-def save_json_dict(filename, data):
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def normalize_email(email):
-    return (email or '').strip().lower()
-
-def is_valid_email(email):
-    return bool(EMAIL_REGEX.match(email))
-
-def generate_verification_code():
-    return ''.join(str(random.randint(0, 9)) for _ in range(6))
-
-def send_verification_email(to_email, code):
-    if not GMAIL_APP_PASSWORD:
-        raise RuntimeError('GMAIL_APP_PASSWORD не задан на сервере')
-
-    body = (
-        f'Ваш код подтверждения: {code}\n\n'
-        f'Код действителен в течении {CODE_VALID_MINUTES} минут.\n\n'
-        'Если вы не запрашивали код, просто проигнорируйте это письмо.'
-    )
-    message = MIMEText(body, 'plain', 'utf-8')
-    message['Subject'] = 'Код подтверждения Vibe'
-    message['From'] = GMAIL_USER
-    message['To'] = to_email
-
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-        server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-        server.send_message(message)
-
-def get_device_resend_wait(device_id):
-    limits = load_json_dict(EMAIL_SEND_LIMITS_FILE)
-    device_data = limits.get(device_id)
-    if not device_data or not device_data.get('last_sent_at'):
-        return 0
-    last_sent = datetime.fromisoformat(device_data['last_sent_at'])
-    cooldown_end = last_sent + timedelta(minutes=RESEND_COOLDOWN_MINUTES)
-    remaining = (cooldown_end - datetime.now()).total_seconds()
-    return max(0, int(remaining))
-
-def record_device_send(device_id):
-    limits = load_json_dict(EMAIL_SEND_LIMITS_FILE)
-    limits[device_id] = {'last_sent_at': datetime.now().isoformat()}
-    save_json_dict(EMAIL_SEND_LIMITS_FILE, limits)
-
-def find_user_by_email(users, email):
-    email = normalize_email(email)
-    for user in users:
-        if normalize_email(user.get('email', '')) == email:
-            return user
-    return None
-
-def find_user_by_login(users, login):
-    login = (login or '').strip()
-    email_login = normalize_email(login)
-    for user in users:
-        if normalize_email(user.get('email', '')) == email_login:
-            return user
-        if user.get('username') == login:
-            return user
-    return None
-
-def user_public_data(user):
-    return {
-        'id': user['id'],
-        'username': user['username'],
-        'email': user.get('email'),
-        'avatar': user.get('avatar'),
-        'bio': user.get('bio', ''),
-        'nickname_prompt_pending': user.get('nickname_prompt_pending', False),
-    }
-
-def check_user_password(user, password):
-    stored_password = user.get('password', '')
-    if stored_password.startswith('pbkdf2:sha256:'):
-        return check_password_hash(stored_password, password)
-    return stored_password == password
-
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
 # Инициализация файлов если их нет
 if not os.path.exists(USERS_FILE):
     save_data(USERS_FILE, [])
@@ -219,16 +124,6 @@ if not os.path.exists(CHAT_FILE):
     save_data(CHAT_FILE, [])
 if not os.path.exists(LOGIN_ATTEMPTS_FILE):
     save_login_attempts({})
-<<<<<<< HEAD
-<<<<<<< HEAD
-if not os.path.exists(PENDING_REGISTRATIONS_FILE):
-    save_json_dict(PENDING_REGISTRATIONS_FILE, {})
-if not os.path.exists(EMAIL_SEND_LIMITS_FILE):
-    save_json_dict(EMAIL_SEND_LIMITS_FILE, {})
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
 
 @app.route('/')
 def serve_index():
@@ -245,60 +140,6 @@ def serve_uploaded_file(filename):
     """Отдает загруженные файлы"""
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-# API endpoints — регистрация по email
-@app.route('/api/register/send-code', methods=['POST'])
-def register_send_code():
-    """Отправка кода подтверждения на email"""
-    data = request.json or {}
-    email = normalize_email(data.get('email'))
-    password = data.get('password', '')
-    device_id = (data.get('device_id') or '').strip()
-
-    if not email or not password:
-        return jsonify({'success': False, 'message': 'Email и пароль обязательны'}), 400
-    if not is_valid_email(email):
-        return jsonify({'success': False, 'message': 'Некорректный email'}), 400
-=======
-# API endpoints
-@app.route('/api/register', methods=['POST'])
-def register():
-    """Регистрация нового пользователя"""
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    
-    if not username or not password:
-        return jsonify({'success': False, 'message': 'Имя пользователя и пароль обязательны'}), 400
-    
-    users = load_data(USERS_FILE)
-    
-    # Проверяем, существует ли пользователь
-    for user in users:
-        if user['username'] == username:
-            return jsonify({'success': False, 'message': 'Пользователь уже существует'}), 400
-    
-    # Валидация длины пароля
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
-    if len(password) < 4:
-        return jsonify({'success': False, 'message': 'Пароль должен содержать минимум 4 символа'}), 400
-    
-    # Валидация имени пользователя
-    if len(username) < 3 or len(username) > 20:
-        return jsonify({'success': False, 'message': 'Имя пользователя должно быть от 3 до 20 символов'}), 400
-    
-    # Сохраняем пароль в plain-text (по требованию пользователя)
-    # Хэширование отключено для соответствия требованиям безопасности пользователя
-    
-    # Создаем нового пользователя
-    new_user = {
-<<<<<<< HEAD
-        'id': new_id,
-        'email': email,
-        'username': email,
-        'password': registration['password'],
-=======
 # API endpoints
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -333,135 +174,10 @@ def register():
         'id': len(users) + 1,
         'username': username,
         'password': password,  # Plain-text пароль
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
-        'id': len(users) + 1,
-        'username': username,
-        'password': password,  # Plain-text пароль
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
         'avatar': None,
         'bio': '',
         'created_at': datetime.now().isoformat(),
         'updated_at': datetime.now().isoformat(),
-<<<<<<< HEAD
-<<<<<<< HEAD
-        'following': [],
-        'followers': [],
-        'bookmarks': [],
-        'verified': False,
-        'nickname_prompt_pending': True,
-        'nickname_attempts': 0,
-=======
-        'following': [],   # ID пользователей, на которых подписан
-        'followers': [],   # ID подписчиков
-        'bookmarks': [],   # ID постов в закладках
-        'verified': False  # Статус верификации по умолчанию
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
-    }
-    
-    users.append(new_user)
-    save_data(USERS_FILE, users)
-    
-    return jsonify({
-<<<<<<< HEAD
-        'success': True,
-        'message': 'Email подтверждён',
-        'user': user_public_data(new_user),
-        'nickname_attempts_left': MAX_NICKNAME_ATTEMPTS,
-    })
-
-@app.route('/api/register/set-nickname', methods=['POST'])
-def register_set_nickname():
-    """Установка ника после регистрации (3 попытки)"""
-    data = request.json or {}
-    user_id = data.get('user_id')
-    nickname = (data.get('nickname') or '').strip()
-    skip = data.get('skip', False)
-
-    if not user_id:
-        return jsonify({'success': False, 'message': 'ID пользователя обязателен'}), 400
-
-    users = load_data(USERS_FILE)
-    user_index = -1
-    for i, user in enumerate(users):
-        if str(user['id']) == str(user_id):
-            user_index = i
-            break
-
-    if user_index == -1:
-        return jsonify({'success': False, 'message': 'Пользователь не найден'}), 404
-
-    user = users[user_index]
-    if skip or not nickname:
-        user['username'] = user.get('email', user['username'])
-        user['nickname_prompt_pending'] = False
-        user['updated_at'] = datetime.now().isoformat()
-        users[user_index] = user
-        save_data(USERS_FILE, users)
-        return jsonify({
-            'success': True,
-            'message': 'Ник не выбран, используется email',
-            'user': user_public_data(user),
-        })
-
-    if user.get('nickname_attempts', 0) >= MAX_NICKNAME_ATTEMPTS:
-        user['username'] = user.get('email', user['username'])
-        user['nickname_prompt_pending'] = False
-        user['updated_at'] = datetime.now().isoformat()
-        users[user_index] = user
-        save_data(USERS_FILE, users)
-        return jsonify({
-            'success': True,
-            'message': 'Попытки закончились, используется email как ник',
-            'user': user_public_data(user),
-        })
-
-    if len(nickname) < 3 or len(nickname) > 20:
-        user['nickname_attempts'] = user.get('nickname_attempts', 0) + 1
-        users[user_index] = user
-        save_data(USERS_FILE, users)
-        left = MAX_NICKNAME_ATTEMPTS - user['nickname_attempts']
-        return jsonify({
-            'success': False,
-            'message': 'Ник должен быть от 3 до 20 символов',
-            'attempts_left': max(0, left),
-        }), 400
-
-    if '@' in nickname:
-        user['nickname_attempts'] = user.get('nickname_attempts', 0) + 1
-        users[user_index] = user
-        save_data(USERS_FILE, users)
-        left = MAX_NICKNAME_ATTEMPTS - user['nickname_attempts']
-        return jsonify({
-            'success': False,
-            'message': 'Ник не может быть email-адресом',
-            'attempts_left': max(0, left),
-        }), 400
-
-    for other in users:
-        if other['id'] != user['id'] and other['username'].lower() == nickname.lower():
-            user['nickname_attempts'] = user.get('nickname_attempts', 0) + 1
-            users[user_index] = user
-            save_data(USERS_FILE, users)
-            left = MAX_NICKNAME_ATTEMPTS - user['nickname_attempts']
-            return jsonify({
-                'success': False,
-                'message': 'Этот ник уже занят',
-                'attempts_left': max(0, left),
-            }), 400
-
-    user['username'] = nickname
-    user['nickname_prompt_pending'] = False
-    user['nickname_attempts'] = 0
-    user['updated_at'] = datetime.now().isoformat()
-    users[user_index] = user
-    save_data(USERS_FILE, users)
-
-    return jsonify({
-        'success': True,
-        'message': 'Ник установлен',
-        'user': user_public_data(user),
-=======
         'following': [],   # ID пользователей, на которых подписан
         'followers': [],   # ID подписчиков
         'bookmarks': [],   # ID постов в закладках
@@ -475,12 +191,6 @@ def register_set_nickname():
         'success': True, 
         'message': 'Регистрация успешна',
         'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
-        'success': True, 
-        'message': 'Регистрация успешна',
-        'user': {'id': new_user['id'], 'username': new_user['username'], 'avatar': new_user['avatar']}
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     })
 
 @app.route('/api/login', methods=['POST'])
@@ -751,7 +461,8 @@ def create_post():
             'likes': 0,
             'comments': [],
             'files': uploaded_files,
-            'video_url': data.get('video_url', '')  # Для обратной совместимости
+            'video_url': data.get('video_url', ''),  # Для обратной совместимости
+            'views': 0  # Счетчик просмотров
         }
         
         posts.append(new_post)
@@ -1050,7 +761,8 @@ def repost_post(post_id):
         'video_url': original_post.get('video_url', ''),
         'original_post_id': post_id,
         'original_author': original_post['author'],
-        'reposts': 0  # У репоста свои репосты
+        'reposts': 0,  # У репоста свои репосты
+        'views': 0
     }
     
     posts.append(new_post)
@@ -1151,6 +863,24 @@ def delete_post(post_id):
         'message': 'Пост удален',
         'post': deleted_post
     })
+
+@app.route('/api/posts/<int:post_id>/view', methods=['POST'])
+def view_post(post_id):
+    """Увеличение счетчика просмотров поста"""
+    posts = load_data(POSTS_FILE)
+    
+    for post in posts:
+        if post['id'] == post_id:
+            if 'views' not in post:
+                post['views'] = 0
+            post['views'] += 1
+            save_data(POSTS_FILE, posts)
+            return jsonify({
+                'success': True,
+                'views': post['views']
+            })
+    
+    return jsonify({'success': False, 'message': 'Пост не найден'}), 404
 
 @app.route('/api/broadcast', methods=['POST'])
 def broadcast_message():

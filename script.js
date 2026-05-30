@@ -27,18 +27,6 @@ const VibeApp = {
     
     // Видимость эмодзи-пикера
     emojiPickerVisible: false,
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-    // Данные регистрации до подтверждения email
-    pendingRegistration: null,
-
-    // Таймер повторной отправки кода
-    resendTimerInterval: null,
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     
     // Инициализация приложения
     init: function() {
@@ -101,18 +89,6 @@ const VibeApp = {
         // Формы
         document.getElementById('login-form-element').addEventListener('submit', (e) => this.handleLogin(e));
         document.getElementById('register-form-element').addEventListener('submit', (e) => this.handleRegister(e));
-<<<<<<< HEAD
-<<<<<<< HEAD
-        document.getElementById('verify-code-form-element').addEventListener('submit', (e) => this.handleVerifyCode(e));
-        document.getElementById('nickname-form-element').addEventListener('submit', (e) => this.handleSetNickname(e));
-
-        document.getElementById('verify-code-input').addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
-        });
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
         document.getElementById('post-form').addEventListener('submit', (e) => this.handleCreatePost(e));
         
         // Обработка выбора файлов для поста
@@ -243,115 +219,12 @@ const VibeApp = {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
         document.getElementById('create-post-form').classList.add('hidden');
-<<<<<<< HEAD
-<<<<<<< HEAD
-        this.stopResendTimer();
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     },
     
     // Скрыть формы авторизации
     hideAuthForms: function() {
         document.getElementById('login-form').classList.add('hidden');
         document.getElementById('register-form').classList.add('hidden');
-<<<<<<< HEAD
-<<<<<<< HEAD
-        document.getElementById('verify-code-form').classList.add('hidden');
-        this.stopResendTimer();
-    },
-
-    showVerifyForm: function(email) {
-        this.hideAllForms();
-        document.getElementById('verify-code-hint').textContent = `Код отправлен на ${email}`;
-        document.getElementById('verify-code-input').value = '';
-        document.getElementById('verify-code-form').classList.remove('hidden');
-        this.updateResendCooldown();
-    },
-
-    showNicknameForm: function(attemptsLeft) {
-        document.getElementById('login-form').classList.add('hidden');
-        document.getElementById('register-form').classList.add('hidden');
-        document.getElementById('verify-code-form').classList.add('hidden');
-        document.getElementById('create-post-form').classList.add('hidden');
-        const left = attemptsLeft !== undefined ? attemptsLeft : 3;
-        document.getElementById('nickname-attempts-left').textContent = left;
-        document.getElementById('nickname-input').value = '';
-        document.getElementById('nickname-form').classList.remove('hidden');
-    },
-
-    stopResendTimer: function() {
-        if (this.resendTimerInterval) {
-            clearInterval(this.resendTimerInterval);
-            this.resendTimerInterval = null;
-        }
-    },
-
-    updateResendCooldown: function() {
-        this.stopResendTimer();
-        const btn = document.getElementById('resend-code-btn');
-        const timerEl = document.getElementById('verify-code-timer');
-
-        const tick = () => {
-            this.apiRequest(`/api/register/resend-wait?device_id=${encodeURIComponent(this.getDeviceId())}`, 'GET')
-                .then(data => {
-                    const wait = data.resend_wait_seconds || 0;
-                    if (wait <= 0) {
-                        btn.disabled = false;
-                        btn.textContent = 'Отправить снова';
-                        timerEl.textContent = 'Можно отправить код повторно';
-                        this.stopResendTimer();
-                        return;
-                    }
-                    const min = Math.floor(wait / 60);
-                    const sec = wait % 60;
-                    btn.disabled = true;
-                    btn.textContent = 'Отправить снова';
-                    timerEl.textContent = min > 0
-                        ? `Повторная отправка через ${min} мин. ${sec} сек.`
-                        : `Повторная отправка через ${sec} сек.`;
-                })
-                .catch(() => {});
-        };
-
-        tick();
-        this.resendTimerInterval = setInterval(tick, 1000);
-    },
-
-    cancelVerification: function() {
-        this.pendingRegistration = null;
-        this.hideAuthForms();
-        this.showRegisterForm();
-    },
-
-    resendVerificationCode: function() {
-        if (!this.pendingRegistration) {
-            alert('Сначала заполните форму регистрации');
-            this.showRegisterForm();
-            return;
-        }
-
-        const { email, password } = this.pendingRegistration;
-        this.apiRequest('/api/register/send-code', 'POST', {
-            email,
-            password,
-            device_id: this.getDeviceId()
-        })
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    this.updateResendCooldown();
-                } else {
-                    alert(data.message || 'Не удалось отправить код');
-                    this.updateResendCooldown();
-                }
-            })
-            .catch(() => alert('Ошибка соединения с сервером'));
-=======
->>>>>>> parent of 3e4a103 (Исправление добавения)
-=======
->>>>>>> parent of 7e7e868 (изменение регистрации и входа)
     },
     
     // Скрыть форму создания поста
@@ -366,9 +239,10 @@ const VibeApp = {
         const filePreview = document.getElementById('file-preview');
         if (filePreview) filePreview.innerHTML = '';
         
-        // Сбрасываем состояние редактирования
+        // Сбрасываем состояние редактирования и репоста
         const postForm = document.getElementById('post-form');
         delete postForm.dataset.editPostId;
+        delete postForm.dataset.repostId;
         
         // Восстанавливаем заголовок и текст кнопки
         const title = form.querySelector('h2');
@@ -736,7 +610,7 @@ const VibeApp = {
     // Загрузка настроек
     loadSettings: function() {
         // Загружаем сохраненные настройки из localStorage
-        const theme = localStorage.getItem('vibe_theme') || 'light';
+        const theme = localStorage.getItem('vibe_theme') || 'dark';
         const notifications = localStorage.getItem('vibe_notifications') !== 'false';
         const privacy = localStorage.getItem('vibe_privacy') || 'public';
         
@@ -750,7 +624,7 @@ const VibeApp = {
 
     // Применение темы
     applyTheme: function() {
-        const theme = localStorage.getItem('vibe_theme') || 'light';
+        const theme = localStorage.getItem('vibe_theme') || 'dark';
         // Удаляем предыдущие классы тем
         document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         // Добавляем текущую тему
@@ -817,6 +691,10 @@ const VibeApp = {
             const comments = post.comments || [];
             const commentsText = comments.length === 1 ? '1 комментарий' : `${comments.length} комментариев`;
 
+            // Просмотры
+            const views = post.views || 0;
+            const viewsText = views === 1 ? '1 просмотр' : `${views} просмотров`;
+
             postsHTML += `
                 <div class="post-card" data-post-id="${post.id}">
                     <div class="post-header">
@@ -872,6 +750,10 @@ const VibeApp = {
                             <i class="fas fa-retweet"></i>
                             <span class="repost-count">0</span>
                         </button>
+                        <button class="views-btn" data-post-id="${post.id}" title="Просмотры">
+                            <i class="fas fa-eye"></i>
+                            <span class="views-count">${viewsText}</span>
+                        </button>
                         <button class="bookmark-btn ${this.isPostBookmarked(post.id) ? 'bookmarked' : ''}" data-post-id="${post.id}" title="В закладки">
                             <i class="fas fa-bookmark"></i>
                         </button>
@@ -919,88 +801,98 @@ const VibeApp = {
         }).join('');
     },
 
-    // Отображение файлов поста
+    // Отображение файлов поста — современный формат (сетка для фото, плееры для аудио/видео)
     renderPostFiles: function(files) {
         if (!files || files.length === 0) {
             return '';
         }
         
+        const images = files.filter(f => f.type === 'image');
+        const videos = files.filter(f => f.type === 'video');
+        const audios = files.filter(f => f.type === 'audio');
+        const others = files.filter(f => f.type !== 'image' && f.type !== 'video' && f.type !== 'audio');
+        
         let filesHTML = '<div class="post-files">';
-        filesHTML += '<div class="post-files-title"><i class="fas fa-paperclip"></i> Прикрепленные файлы</div>';
-        filesHTML += '<div class="post-files-list">';
         
-        files.forEach(file => {
-            const fileType = file.type || 'file';
-            const fileName = this.escapeHtml(file.original_name || file.filename);
-            const fileUrl = file.url || `/uploads/posts/${file.filename}`;
-            
-            if (fileType === 'image') {
+        // Изображения — сеткой
+        if (images.length > 0) {
+            const gridClass = images.length === 1 ? 'media-grid-single' :
+                              images.length === 2 ? 'media-grid-two' :
+                              images.length === 3 ? 'media-grid-three' : 'media-grid-many';
+            filesHTML += `<div class="media-grid ${gridClass}">`;
+            images.forEach((file, index) => {
+                const fileUrl = file.url || `/uploads/posts/${file.filename}`;
+                const fileName = this.escapeHtml(file.original_name || file.filename);
+                const extraClass = index === 0 && images.length > 3 ? ' media-grid-featured' : '';
                 filesHTML += `
-                    <div class="post-file-item post-file-image" data-file-url="${fileUrl}" data-file-type="image">
-                        <div class="file-thumbnail">
-                            <img src="${fileUrl}" alt="${fileName}" loading="lazy">
-                        </div>
-                        <div class="file-info">
-                            <div class="file-name">${fileName}</div>
-                            <div class="file-actions">
-                                <button class="btn btn-icon btn-small view-file-btn" title="Просмотр"><i class="fas fa-eye"></i></button>
-                                <a href="${fileUrl}" download="${fileName}" class="btn btn-icon btn-small download-file-btn" title="Скачать"><i class="fas fa-download"></i></a>
-                            </div>
-                        </div>
+                    <div class="media-grid-item${extraClass}" data-file-url="${fileUrl}" data-file-type="image" title="${fileName}">
+                        <img src="${fileUrl}" alt="${fileName}" loading="lazy">
+                        ${index === 3 && images.length > 4 ? `<div class="media-grid-overlay">+${images.length - 4}</div>` : ''}
                     </div>
                 `;
-            } else if (fileType === 'video') {
-                filesHTML += `
-                    <div class="post-file-item post-file-video" data-file-url="${fileUrl}" data-file-type="video">
-                        <div class="file-thumbnail">
-                            <i class="fas fa-video"></i>
-                        </div>
-                        <div class="file-info">
-                            <div class="file-name">${fileName}</div>
-                            <div class="file-actions">
-                                <button class="btn btn-icon btn-small view-file-btn" title="Просмотр"><i class="fas fa-play"></i></button>
-                                <a href="${fileUrl}" download="${fileName}" class="btn btn-icon btn-small download-file-btn" title="Скачать"><i class="fas fa-download"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else if (fileType === 'audio') {
-                filesHTML += `
-                    <div class="post-file-item post-file-audio" data-file-url="${fileUrl}" data-file-type="audio">
-                        <div class="file-thumbnail">
-                            <i class="fas fa-music"></i>
-                        </div>
-                        <div class="file-info">
-                            <div class="file-name">${fileName}</div>
-                            <div class="file-actions">
-                                <audio controls class="audio-player">
-                                    <source src="${fileUrl}" type="audio/mpeg">
-                                    Ваш браузер не поддерживает аудио элемент.
-                                </audio>
-                                <a href="${fileUrl}" download="${fileName}" class="btn btn-icon btn-small download-file-btn" title="Скачать"><i class="fas fa-download"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                filesHTML += `
-                    <div class="post-file-item post-file-other" data-file-url="${fileUrl}" data-file-type="file">
-                        <div class="file-thumbnail">
-                            <i class="fas fa-file"></i>
-                        </div>
-                        <div class="file-info">
-                            <div class="file-name">${fileName}</div>
-                            <div class="file-actions">
-                                <a href="${fileUrl}" target="_blank" class="btn btn-icon btn-small view-file-btn" title="Открыть"><i class="fas fa-external-link-alt"></i></a>
-                                <a href="${fileUrl}" download="${fileName}" class="btn btn-icon btn-small download-file-btn" title="Скачать"><i class="fas fa-download"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        });
+                if (index === 3 && images.length > 4) break; // показываем максимум 4
+            });
+            filesHTML += '</div>';
+        }
         
-        filesHTML += '</div></div>';
+        // Видео — встроенный плеер
+        if (videos.length > 0) {
+            videos.forEach(file => {
+                const fileUrl = file.url || `/uploads/posts/${file.filename}`;
+                const fileName = this.escapeHtml(file.original_name || file.filename);
+                filesHTML += `
+                    <div class="media-video" data-file-url="${fileUrl}" data-file-type="video">
+                        <video controls preload="metadata" poster="">
+                            <source src="${fileUrl}" type="video/mp4">
+                            Ваш браузер не поддерживает видео.
+                        </video>
+                        <div class="media-video-name"><i class="fas fa-video"></i> ${fileName}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        // Аудио — встроенный плеер
+        if (audios.length > 0) {
+            audios.forEach(file => {
+                const fileUrl = file.url || `/uploads/posts/${file.filename}`;
+                const fileName = this.escapeHtml(file.original_name || file.filename);
+                filesHTML += `
+                    <div class="media-audio">
+                        <div class="media-audio-icon"><i class="fas fa-music"></i></div>
+                        <div class="media-audio-info">
+                            <div class="media-audio-name">${fileName}</div>
+                            <audio controls class="audio-player">
+                                <source src="${fileUrl}" type="audio/mpeg">
+                                Ваш браузер не поддерживает аудио.
+                            </audio>
+                        </div>
+                        <a href="${fileUrl}" download="${fileName}" class="btn btn-icon btn-small" title="Скачать"><i class="fas fa-download"></i></a>
+                    </div>
+                `;
+            });
+        }
+        
+        // Остальные файлы — компактные ссылки
+        if (others.length > 0) {
+            filesHTML += '<div class="media-others">';
+            others.forEach(file => {
+                const fileUrl = file.url || `/uploads/posts/${file.filename}`;
+                const fileName = this.escapeHtml(file.original_name || file.filename);
+                const ext = fileName.split('.').pop().toUpperCase();
+                filesHTML += `
+                    <a href="${fileUrl}" target="_blank" class="media-other-item" download="${fileName}">
+                        <i class="fas fa-file"></i>
+                        <span class="media-other-name">${fileName}</span>
+                        <span class="media-other-ext">${ext}</span>
+                        <i class="fas fa-download media-other-dl"></i>
+                    </a>
+                `;
+            });
+            filesHTML += '</div>';
+        }
+        
+        filesHTML += '</div>';
         return filesHTML;
     },
     
@@ -1106,26 +998,43 @@ const VibeApp = {
             });
         });
 
-        // Просмотр файлов
-        document.querySelectorAll('.view-file-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const fileItem = e.currentTarget.closest('.post-file-item');
-                const fileUrl = fileItem.dataset.fileUrl;
-                const fileType = fileItem.dataset.fileType;
+        // Клик на изображение в медиа-сетке для просмотра
+        document.querySelectorAll('.media-grid-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                const fileUrl = e.currentTarget.dataset.fileUrl;
+                const fileType = e.currentTarget.dataset.fileType;
                 this.showFileModal(fileUrl, fileType);
             });
         });
 
-        // Клик на изображение для просмотра
-        document.querySelectorAll('.file-thumbnail img').forEach(img => {
-            img.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const fileItem = e.currentTarget.closest('.post-file-item');
-                const fileUrl = fileItem.dataset.fileUrl;
-                this.showFileModal(fileUrl, 'image');
+        // Отслеживание просмотров постов (IntersectionObserver)
+        if (this.currentUser) {
+            const viewObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const postCard = entry.target;
+                        const postId = postCard.dataset.postId;
+                        if (postId && !postCard.dataset.viewTracked) {
+                            postCard.dataset.viewTracked = 'true';
+                            this.apiRequest(`/api/posts/${postId}/view`, 'POST', {})
+                                .then(data => {
+                                    if (data.success) {
+                                        const viewsCount = postCard.querySelector('.views-count');
+                                        if (viewsCount) {
+                                            viewsCount.textContent = data.views === 1 ? '1 просмотр' : `${data.views} просмотров`;
+                                        }
+                                    }
+                                })
+                                .catch(err => console.error('Ошибка отслеживания просмотра:', err));
+                        }
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.post-card').forEach(card => {
+                viewObserver.observe(card);
             });
-        });
+        }
     },
 
     // Показать модальное окно с файлом
@@ -1274,6 +1183,31 @@ const VibeApp = {
         
         const form = document.getElementById('post-form');
         const editPostId = form.dataset.editPostId;
+        const repostId = form.dataset.repostId;
+        
+        // Если это репост — вызываем API репоста
+        if (repostId) {
+            this.apiRequest(`/api/posts/${repostId}/repost`, 'POST', {
+                user_id: this.currentUser.id,
+                title: title,
+                content: content,
+                video_url: videoUrl
+            })
+            .then(data => {
+                if (data.success) {
+                    alert('Пост успешно репостнут!');
+                    this.hideCreatePostForm();
+                    this.loadPosts();
+                } else {
+                    alert('Ошибка: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка репоста:', error);
+                alert('Ошибка при репосте');
+            });
+            return;
+        }
         
         // Если есть ID редактируемого поста, отправляем PUT-запрос (без файлов)
         if (editPostId) {
@@ -1564,7 +1498,7 @@ const VibeApp = {
         });
     },
     
-    // Репост поста
+    // Репост поста — открывает форму создания с содержимым оригинала
     repostPost: function(postId) {
         if (!this.currentUser) {
             alert('Для репоста необходимо войти в систему');
@@ -1572,25 +1506,40 @@ const VibeApp = {
             return;
         }
         
-        if (!confirm('Вы уверены, что хотите сделать репост этого поста?')) {
-            return;
-        }
-        
-        this.apiRequest(`/api/posts/${postId}/repost`, 'POST', {
-            user_id: this.currentUser.id
-        })
-        .then(data => {
-            if (data.success) {
-                alert('Пост успешно репостнут!');
-                this.loadPosts(); // Обновляем ленту
-            } else {
-                alert('Ошибка: ' + data.message);
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка репоста:', error);
-            alert('Ошибка при репосте');
-        });
+        // Загружаем данные оригинального поста
+        this.apiRequest(`/api/posts/${postId}`, 'GET')
+            .then(data => {
+                if (data.success) {
+                    const original = data.post;
+                    
+                    // Показываем форму создания поста
+                    this.showCreatePostForm();
+                    
+                    // Меняем заголовок формы
+                    const formTitle = document.querySelector('#create-post-form h2');
+                    if (formTitle) formTitle.textContent = 'Сделать репост';
+                    
+                    // Меняем текст кнопки
+                    const submitBtn = document.querySelector('#post-form button[type="submit"]');
+                    if (submitBtn) submitBtn.textContent = 'Репостнуть';
+                    
+                    // Предзаполняем поля
+                    document.getElementById('post-title').value = `Репост: ${original.title}`;
+                    document.getElementById('post-content').value =
+                        `(репост от @${original.author})\n\n${original.content}`;
+                    
+                    // Сохраняем ID оригинального поста для отправки
+                    const postForm = document.getElementById('post-form');
+                    postForm.dataset.repostId = postId;
+                    postForm.dataset.editPostId = ''; // сбрасываем редактирование
+                } else {
+                    alert('Ошибка: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки поста для репоста:', error);
+                alert('Ошибка при загрузке поста');
+            });
     },
     
     // Обновление профиля
